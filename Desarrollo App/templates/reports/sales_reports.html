@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Reportes de Ventas - Entre Brasas{% endblock %}
+{% block header %}Reportes de Ventas{% endblock %}
+
+{% block content %}
+<div class="filter-bar">
+    <div>
+        <label>Desde</label>
+        <input type="date" id="fechaDesde">
+    </div>
+    <div>
+        <label>Hasta</label>
+        <input type="date" id="fechaHasta">
+    </div>
+    <div>
+        <button id="btnFilter" class="btn btn-primary">Filtrar</button>
+    </div>
+</div>
+
+<h2>Resumen</h2>
+<div class="summary-cards" id="summarySection"></div>
+
+<h2>Ventas por dia</h2>
+<div id="dailySales"></div>
+
+<h2>Por metodo de pago</h2>
+<div class="summary-cards" id="paymentMethods"></div>
+
+<h2>Top productos</h2>
+<div id="topProducts"></div>
+
+<h2>Top adicionales</h2>
+<div id="topAddons"></div>
+
+<h2>Comparacion con periodo anterior</h2>
+<div id="comparison"></div>
+
+<script src="/static/js/mocks/orders.js"></script>
+<script src="/static/js/mocks/hamburgers.js"></script>
+<script src="/static/js/mocks/addons.js"></script>
+<script src="/static/js/modules/reports.js"></script>
+{% endblock %}

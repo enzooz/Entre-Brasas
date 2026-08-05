@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if mode == 'create' %}Crear{% else %}Editar{% endif %} Hamburguesa - Entre Brasas{% endblock %}
+{% block header %}{% if mode == 'create' %}Nueva Hamburguesa{% else %}Editar Hamburguesa{% endif %}{% endblock %}
+
+{% block content %}
+{% if form.errors %}
+<div class="alert alert-error">
+    {% for field, errors in form.errors.items %}
+    <p><strong>{{ field }}:</strong> {{ errors|join:", " }}</p>
+    {% endfor %}
+</div>
+{% endif %}
+
+<form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="id_nombre">Nombre *</label>
+        {{ form.nombre }}
+    </div>
+    <div class="form-group">
+        <label for="id_descripcion">Descripcion *</label>
+        {{ form.descripcion }}
+    </div>
+    <div class="form-group">
+        <label for="id_precio_base">Precio Base ($) *</label>
+        {{ form.precio_base }}
+    </div>
+    <div class="form-group">
+        <label for="id_incluye_papas">
+            {{ form.incluye_papas }} Incluye Papas
+        </label>
+    </div>
+    <div class="form-actions">
+        <a href="{% url 'menu:manage_hamburgers' %}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">{% if mode == 'create' %}Crear{% else %}Guardar{% endif %}</button>
+    </div>
+</form>
+{% endblock %}

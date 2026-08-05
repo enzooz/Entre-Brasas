@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}Pedido #{{ order.pk }} - Entre Brasas{% endblock %}
+{% block header %}Pedido #{{ order.pk }}{% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="messages">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<a href="{% url 'orders:order_queue' %}" class="btn btn-secondary">Volver a la cola</a>
+
+<div class="card">
+    <h2>Datos del Cliente</h2>
+    <p><strong>Nombre:</strong> {{ order.cliente_nombre }}</p>
+    <p><strong>Telefono:</strong> {{ order.cliente_telefono }}</p>
+    <p><strong>Direccion:</strong> {{ order.cliente_direccion }}</p>
+    {% if order.observaciones %}
+    <p><strong>Observaciones:</strong> {{ order.observaciones }}</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>Productos</h2>
+    <table>
+        <tr>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Precio Unitario</th>
+            <th>Subtotal</th>
+            <th>Adicionales</th>
+        </tr>
+        <tbody>
+            {% for item in order.items.all %}
+            <tr>
+                <td>{{ item.hamburguesa.nombre }}</td>
+                <td>{{ item.cantidad }}</td>
+                <td>${{ item.precio_unitario }}</td>
+                <td>${{ item.subtotal }}</td>
+                <td>
+                    {% for addon in item.adicionales.all %}
+                    {{ addon.adicional.nombre }} (${{ addon.precio }}){% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>Costos</h2>
+    <p><strong>Productos:</strong> ${{ total_productos }}</p>
+    <p><strong>Adicionales:</strong> ${{ total_adicionales }}</p>
+    <p><strong>Envio:</strong> ${{ order.costo_envio }}</p>
+    <p class="total-highlight"><strong>TOTAL:</strong> ${{ order.total }}</p>
+</div>
+
+<div class="card">
+    <h2>Estado</h2>
+    <p><strong>Estado actual:</strong> {{ order.get_estado_display }}</p>
+    <p><strong>Metodo de pago:</strong> {{ order.get_metodo_pago_display }}</p>
+    <p><strong>Fecha:</strong> {{ order.fecha_creacion|date:"d/m/Y H:i" }}</p>
+</div>
+
+{% if order.estado != 'entregado' and order.estado != 'cancelado' %}
+<div class="card">
+    <h2>Cambiar Estado</h2>
+    <form method="post" action="{% url 'orders:advance_order' order.pk %}">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="id_observacion">Observacion (opcional)</label>
+            <input type="text" name="observacion" id="id_observacion" class="form-control">
+        </div>
+        {% if order.estado == 'pendiente' %}
+        <button type="submit" class="btn btn-success">Avanzar a En preparacion</button>
+        {% elif order.estado == 'en_preparacion' %}
+        <button type="submit" class="btn btn-success">Avanzar a En camino</button>
+        {% elif order.estado == 'en_camino' %}
+        <button type="submit" class="btn btn-success">Avanzar a Entregado</button>
+        {% endif %}
+    </form>
+
+    {% if order.estado != 'cancelado' %}
+    <form method="post" action="{% url 'orders:cancel_order' order.pk %}" style="margin-top: 10px;">
+        {% csrf_token %}
+        {% if order.estado == 'en_preparacion' or order.estado == 'en_camino' %}
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="devolver_stock"> Devolver stock al inventario
+            </label>
+        </div>
+        {% endif %}
+        <div class="form-group">
+            <label for="id_motivo_cancelacion">Motivo de cancelacion</label>
+            <input type="text" name="motivo_cancelacion" id="id_motivo_cancelacion" class="form-control">
+        </div>
+        <button type="submit" class="btn btn-danger" onclick="return confirm('Cancelar este pedido?')">Cancelar Pedido</button>
+    </form>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+    <h2>Historial</h2>
+    {% for h in order.historial.all %}
+    <p>{{ h.fecha|date:"d/m/Y H:i" }} - {{ h.get_estado_anterior_display }} → {{ h.get_estado_nuevo_display }}
+        {% if h.observacion %}({{ h.observacion }}){% endif %}</p>
+    {% empty %}
+    <p>No hay historial de cambios</p>
+    {% endfor %}
+</div>
+{% endblock %}

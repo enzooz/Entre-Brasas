@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Entre Brasas{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <nav>
+        <div class="logo">
+            <h2>Entre Brasas</h2>
+        </div>
+        <ul>
+            <li><a href="{% url 'orders:create_order' %}">Crear Pedido</a></li>
+            <li><a href="{% url 'orders:order_queue' %}">Cola de Pedidos</a></li>
+            <li><a href="{% url 'orders:order_history' %}">Historial</a></li>
+            <li><a href="{% url 'menu:manage_hamburgers' %}">Hamburguesas</a></li>
+            <li><a href="{% url 'menu:manage_addons' %}">Adicionales</a></li>
+            <li><a href="{% url 'inventory:manage_ingredients' %}">Ingredientes</a></li>
+            <li><a href="{% url 'inventory:inventory_view' %}">Inventario</a></li>
+            <li><a href="{% url 'reports:sales_reports' %}">Reportes</a></li>
+            <li><a href="{% url 'costs:costs_view' %}">Costos</a></li>
+            <li><a href="{% url 'inventory:recipes' %}">Recetas</a></li>
+            <li><a href="{% url 'config:admin_panel' %}">Configuracion</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <header>
+            <h1>{% block header %}{% endblock %}</h1>
+        </header>
+
+        <div class="content">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <script src="/static/js/app.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

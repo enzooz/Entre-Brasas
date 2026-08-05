@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Recetas - Entre Brasas{% endblock %}
+{% block header %}Recetas (Ingrediente - Producto){% endblock %}
+
+{% block content %}
+{% if messages %}
+<div class="messages">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card">
+    <form method="get">
+        <div class="form-group">
+            <label>Seleccionar producto:</label>
+            <select name="tipo" class="form-control" onchange="this.form.submit()">
+                <option value="">-- Seleccionar tipo --</option>
+                <option value="hamburger" {% if selected_tipo == 'hamburger' %}selected{% endif %}>Hamburguesa</option>
+                <option value="addon" {% if selected_tipo == 'addon' %}selected{% endif %}>Adicional</option>
+            </select>
+        </div>
+        {% if selected_tipo %}
+        <div class="form-group">
+            <label>Producto:</label>
+            <select name="producto" class="form-control" onchange="this.form.submit()">
+                <option value="">-- Seleccionar producto --</option>
+                {% if selected_tipo == 'hamburger' %}
+                    {% for h in hamburgers %}
+                    <option value="{{ h.pk }}" {% if selected_product == h.pk|stringformat:"d" %}selected{% endif %}>{{ h.nombre }}</option>
+                    {% endfor %}
+                {% else %}
+                    {% for a in addons %}
+                    <option value="{{ a.pk }}" {% if selected_product == a.pk|stringformat:"d" %}selected{% endif %}>{{ a.nombre }}</option>
+                    {% endfor %}
+                {% endif %}
+            </select>
+        </div>
+        {% endif %}
+    </form>
+</div>
+
+{% if selected_product and selected_tipo %}
+<div class="card">
+    <h2>Ingredientes del producto</h2>
+    <table>
+        <tr>
+            <th>Ingrediente</th>
+            <th>Cantidad Requerida</th>
+            <th>Accion</th>
+        </tr>
+        <tbody>
+            {% for r in recipe_items %}
+            <tr>
+                <td>{{ r.ingrediente.nombre }}</td>
+                <td>{{ r.cantidad_requerida }} {{ r.ingrediente.get_unidad_display }}</td>
+                <td>
+                    <a href="{% url 'inventory:delete_recipe_item' r.pk %}" class="btn btn-danger" onclick="return confirm('Eliminar este ingrediente de la receta?')">Eliminar</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3">No hay ingredientes en esta receta</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>Agregar ingrediente</h2>
+    <form method="post" action="{% url 'inventory:add_recipe_item' %}">
+        {% csrf_token %}
+        <input type="hidden" name="producto_tipo" value="{{ selected_tipo }}">
+        <input type="hidden" name="producto_id" value="{{ selected_product }}">
+        <div class="form-group">
+            <label>Ingrediente *</label>
+            <select name="ingrediente" class="form-control" required>
+                <option value="">Seleccionar ingrediente...</option>
+                {% for i in ingredients %}
+                <option value="{{ i.pk }}">{{ i.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Cantidad *</label>
+            <input type="number" name="cantidad_requerida" class="form-control" min="0.01" step="0.01" required placeholder="Cantidad">
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Agregar ingrediente</button>
+        </div>
+    </form>
+</div>
+{% endif %}
+{% endblock %}
