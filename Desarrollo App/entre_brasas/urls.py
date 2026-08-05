@@ -1,9 +1,7 @@
-from django.contrib import admin
 from django.urls import path, include
 from django.shortcuts import redirect
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
     path('', lambda r: redirect('orders:create_order')),
     path('pedidos/', include('apps.orders.urls')),
     path('menu/', include('apps.menu.urls')),
