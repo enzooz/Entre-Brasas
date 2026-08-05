@@ -26,11 +26,12 @@ class IngredientForm(forms.ModelForm):
 class InventoryMovementForm(forms.ModelForm):
     class Meta:
         model = InventoryMovement
-        fields = ['ingrediente', 'tipo', 'cantidad', 'motivo']
+        fields = ['ingrediente', 'tipo', 'cantidad', 'precio_unitario', 'motivo']
         widgets = {
             'ingrediente': forms.Select(attrs={'class': 'form-control'}),
             'tipo': forms.Select(attrs={'class': 'form-control'}),
             'cantidad': forms.NumberInput(attrs={'class': 'form-control', 'min': '0.01', 'step': '0.01'}),
+            'precio_unitario': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '1', 'placeholder': 'Precio por unidad (opcional)'}),
             'motivo': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
