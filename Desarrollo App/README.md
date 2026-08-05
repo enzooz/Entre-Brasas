@@ -37,17 +37,10 @@ python manage.py migrate
 python manage.py seed_data
 ```
 
-### 8. Crear usuario administrador
-```bash
-$env:DJANGO_SUPERUSER_PASSWORD="admin123"; python manage.py createsuperuser --username admin --email admin@entrebrasas.com --noinput
-```
-
-### 9. Levantar servidor
+### 8. Levantar servidor
 ```bash
 python manage.py runserver
 ```
 
-### 10. Abrir en el navegador
+### 9. Abrir en el navegador
 Abrir http://localhost:8000/menu/hamburguesas/
-
-Credenciales: admin / admin123
