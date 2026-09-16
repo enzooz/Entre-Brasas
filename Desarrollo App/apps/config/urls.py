@@ -1,3 +1,5 @@
+"""URLs del app "config", colgadas del prefijo /config/. Una sola pantalla."""
+
 from django.urls import path
 from . import views
 

@@ -1,3 +1,20 @@
+"""
+Comando de carga de datos iniciales: `python manage.py seed_data`
+
+Esto es un "management command" de Django. La receta para crear uno es fija:
+    apps/<app>/management/commands/<nombre>.py  con una clase Command
+Django escanea esas carpetas solo, y el nombre del archivo pasa a ser el nombre
+del comando. Por eso existen los __init__.py vacíos en management/ y commands/:
+sin ellos Python no reconoce las carpetas como paquetes y el comando no aparece.
+
+Sirve para dejar la base usable en un arranque desde cero (menú, insumos,
+recetas y configuración), sin tener que cargar todo a mano por pantalla.
+
+Todo el archivo usa get_or_create() en vez de create(), así que se puede
+correr varias veces sin duplicar nada: si el registro ya existe, lo reutiliza.
+Ojo con eso: si un dato ya está cargado, volver a correr el seed NO lo actualiza.
+"""
+
 from django.core.management.base import BaseCommand
 from apps.menu.models import Hamburger, Addon
 from apps.inventory.models import Ingredient, Recipe
@@ -8,9 +25,13 @@ class Command(BaseCommand):
     help = 'Seed initial data for Entre Brasas'
 
     def handle(self, *args, **options):
+        """Django ejecuta este método cuando se corre el comando."""
+        # self.stdout.write en vez de print: así Django puede capturar o
+        # silenciar la salida, y respeta los colores de la consola.
         self.stdout.write('Creando datos iniciales...')
 
         # Hamburguesas
+        # Cada tupla es (nombre, descripción, precio, incluye_papas).
         hamburgers_data = [
             ('Clasica', 'Pan, carne, lechuga, tomate, cebolla', 2500, True),
             ('Especial', 'Doble carne, bacon, cheddar, cebolla caramelizada', 3200, False),
@@ -21,8 +42,13 @@ class Command(BaseCommand):
             ('Hawaiana', 'Carne, jamon, pina, queso', 2900, True),
         ]
 
+        # Se guardan en un diccionario {nombre: objeto} para poder referenciarlos
+        # más abajo al armar las recetas y los adicionales sin volver a consultar la base.
         hamburgers = {}
         for nombre, desc, precio, papas in hamburgers_data:
+            # get_or_create busca por 'nombre'; si no lo encuentra, lo crea usando
+            # 'defaults'. Devuelve (objeto, fue_creado) y acá el segundo valor se
+            # descarta con el guión bajo porque no interesa.
             h, _ = Hamburger.objects.get_or_create(
                 nombre=nombre,
                 defaults={'descripcion': desc, 'precio_base': precio, 'incluye_papas': papas}
@@ -31,6 +57,7 @@ class Command(BaseCommand):
             self.stdout.write(f'  Hamburguesa: {nombre}')
 
         # Ingredientes
+        # Cada tupla es (nombre, stock inicial, unidad, stock mínimo, precio de compra).
         ingredients_data = [
             ('Carne molida', 15, 'kg', 5, 1600),
             ('Pan de hamburguesa', 50, 'unidades', 10, 80),
@@ -61,6 +88,7 @@ class Command(BaseCommand):
             self.stdout.write(f'  Ingrediente: {nombre}')
 
         # Adicionales
+        # Cada tupla es (nombre, precio, [hamburguesas a las que aplica]).
         addons_data = [
             ('Bacon Extra', 500, ['Clasica', 'Especial', 'Doble Bacon', 'BBQ']),
             ('Guacamole', 400, ['Clasica', 'Veggie', 'Pollo Crispy']),
@@ -74,10 +102,22 @@ class Command(BaseCommand):
                 nombre=nombre,
                 defaults={'precio': precio}
             )
+            # .add() sobre un ManyToMany crea el vínculo en la tabla intermedia.
+            # Acá se aprovecha el diccionario de hamburguesas armado antes.
             for h_name in hamb_names:
                 addon.productos.add(hamburgers[h_name])
             self.stdout.write(f'  Adicional: {nombre}')
 
+        # --- Recetas ---------------------------------------------------
+        # De acá en adelante se repite el mismo bloque para cada hamburguesa:
+        # una lista de (ingrediente, cantidad por unidad) y un for que la carga.
+        # Las cantidades van en la unidad del ingrediente: 0.200 de 'Carne molida'
+        # son 200 gramos porque ese ingrediente está en kg; 'Tomate' va en unidades.
+        # Esto es lo que después lee descontar_stock() en orders/services.py
+        # para saber cuánto descontar por cada hamburguesa vendida.
+        #
+        # Nota: son siete bloques casi idénticos. Se podría unificar en un solo
+        # diccionario {nombre_hamburguesa: [(ingrediente, cantidad), ...]} y un for.
         # Recetas - Clasica
         recetas_clasica = [
             ('Carne molida', 0.200),
@@ -189,6 +229,7 @@ class Command(BaseCommand):
             )
 
         # Configuracion
+        # pk=1 fijo porque SystemConfig es un singleton (ver apps/config/models.py).
         SystemConfig.objects.get_or_create(
             pk=1,
             defaults={
@@ -199,4 +240,5 @@ class Command(BaseCommand):
             }
         )
 
+        # self.style.SUCCESS pinta el texto de verde en la terminal.
         self.stdout.write(self.style.SUCCESS('Datos iniciales creados exitosamente'))

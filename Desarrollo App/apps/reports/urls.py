@@ -1,3 +1,5 @@
+"""URLs del app "reports", colgadas del prefijo /reportes/. Una sola pantalla."""
+
 from django.urls import path
 from . import views
 
