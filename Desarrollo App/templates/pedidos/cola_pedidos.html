@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Cola de pedidos - Entre Brasas{% endblock %}
+{% block encabezado %}Cola de pedidos{% endblock %}
+
+{% block contenido %}
+
+{# Los filtros se mandan por GET: quedan en la direccion del navegador, #}
+{# asi se puede recargar o guardar la busqueda. #}
+<form method="GET" class="filter-bar">
+    <input type="text" name="busqueda" class="form-control"
+           placeholder="Buscar por cliente" value="{{ busqueda }}">
+
+    <select name="estado" class="form-control">
+        <option value="">Todos los estados</option>
+        {% for valor, texto in estados %}
+            {% if valor != 'entregado' and valor != 'cancelado' %}
+            <option value="{{ valor }}" {% if estado == valor %}selected{% endif %}>{{ texto }}</option>
+            {% endif %}
+        {% endfor %}
+    </select>
+
+    <button type="submit" class="btn btn-primary">Filtrar</button>
+    <a href="{% url 'pedidos:cola_pedidos' %}" class="btn btn-secondary">Limpiar</a>
+</form>
+
+{% for pedido in pedidos %}
+<div class="card order-card card-{{ pedido.estado }}">
+    <h2>Pedido #{{ pedido.pk }} - {{ pedido.cliente_nombre }}</h2>
+
+    <p>
+        <span class="badge badge-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span>
+        {{ pedido.fecha_creacion|date:"d/m/Y H:i" }}
+    </p>
+
+    <p>{{ pedido.cliente_direccion }} - Tel: {{ pedido.cliente_telefono }}</p>
+
+    <ul>
+        {% for item in pedido.items.all %}
+        <li>{{ item.cantidad }}x {{ item.hamburguesa.nombre }}</li>
+        {% endfor %}
+    </ul>
+
+    <p class="total-highlight">Total: ${{ pedido.total }}</p>
+
+    <div class="form-actions">
+        <a href="{% url 'pedidos:detalle_pedido' pedido.pk %}" class="btn btn-info">Ver detalle</a>
+
+        {# Avanzar cambia datos, asi que va por POST y no por link. #}
+        <form method="POST" action="{% url 'pedidos:avanzar_pedido' pedido.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success">Avanzar estado</button>
+        </form>
+    </div>
+</div>
+{% empty %}
+<div class="empty-state">
+    <h2>No hay pedidos en curso</h2>
+    <p>Los pedidos nuevos van a aparecer aca.</p>
+    <a href="{% url 'pedidos:crear_pedido' %}" class="btn btn-primary">Cargar un pedido</a>
+</div>
+{% endfor %}
+
+{% endblock %}

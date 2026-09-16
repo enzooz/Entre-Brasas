@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Configuracion - Entre Brasas{% endblock %}
+{% block encabezado %}Configuracion del sistema{% endblock %}
+
+{% block contenido %}
+
+<div class="alerta alerta-info">
+    Estos valores los usa el sistema para calcular el costo del envio de cada
+    pedido y el costo de preparar cada hamburguesa.
+</div>
+
+{% if form.errors %}
+<div class="alerta alerta-error">Revisa los datos marcados abajo.</div>
+{% endif %}
+
+<form method="POST">
+    {% csrf_token %}
+
+    <div class="card">
+        <h2>Envio</h2>
+        <p>
+            {{ form.tarifa_km.label_tag }}
+            {{ form.tarifa_km }}
+            <small>Cuanto se cobra por cada kilometro.</small>
+        </p>
+        <p>
+            {{ form.distancia_minima.label_tag }}
+            {{ form.distancia_minima }}
+            <small>Hasta esta distancia el envio es gratis.</small>
+        </p>
+        <p>
+            {{ form.costo_minimo_envio.label_tag }}
+            {{ form.costo_minimo_envio }}
+            <small>El envio nunca sale menos que esto.</small>
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>Mano de obra</h2>
+        <p>
+            {{ form.costo_hora_mano_obra.label_tag }}
+            {{ form.costo_hora_mano_obra }}
+            <small>Se usa en la pantalla de costos.</small>
+        </p>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Guardar configuracion</button>
+    </div>
+</form>
+
+{% endblock %}

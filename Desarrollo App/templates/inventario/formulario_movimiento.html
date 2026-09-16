@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Movimiento de stock - Entre Brasas{% endblock %}
+{% block encabezado %}Registrar movimiento de stock{% endblock %}
+
+{% block contenido %}
+<a href="{% url 'inventario:ver_inventario' %}" class="back-link">&laquo; Volver al inventario</a>
+
+<div class="alerta alerta-info">
+    Usa <strong>entrada</strong> cuando llega una compra y
+    <strong>salida</strong> cuando se pierde o se usa algo fuera de un pedido.
+    El descuento por los pedidos lo hace el sistema solo.
+</div>
+
+{% if form.errors %}
+<div class="alerta alerta-error">Revisa los datos marcados abajo.</div>
+{% endif %}
+
+<form method="POST">
+    {% csrf_token %}
+
+    <div class="card">
+        {{ form.as_p }}
+    </div>
+
+    <div class="form-actions">
+        <a href="{% url 'inventario:ver_inventario' %}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Registrar</button>
+    </div>
+</form>
+{% endblock %}

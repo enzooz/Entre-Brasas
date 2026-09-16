@@ -3,40 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Entre Brasas{% endblock %}</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
+    <title>{% block titulo %}Entre Brasas{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/estilo.css">
 </head>
 <body>
+    {# Esta es la pantalla "madre": todas las demas la extienden y solo #}
+    {# completan los bloques. Asi el menu y el encabezado se escriben #}
+    {# una sola vez para todo el sistema. #}
+
     <nav>
         <div class="logo">
             <h2>Entre Brasas</h2>
         </div>
         <ul>
-            <li><a href="{% url 'orders:create_order' %}">Crear Pedido</a></li>
-            <li><a href="{% url 'orders:order_queue' %}">Cola de Pedidos</a></li>
-            <li><a href="{% url 'orders:order_history' %}">Historial</a></li>
-            <li><a href="{% url 'menu:manage_hamburgers' %}">Hamburguesas</a></li>
-            <li><a href="{% url 'menu:manage_addons' %}">Adicionales</a></li>
-            <li><a href="{% url 'inventory:manage_ingredients' %}">Ingredientes</a></li>
-            <li><a href="{% url 'inventory:inventory_view' %}">Inventario</a></li>
-            <li><a href="{% url 'reports:sales_reports' %}">Reportes</a></li>
-            <li><a href="{% url 'costs:costs_view' %}">Costos</a></li>
-            <li><a href="{% url 'inventory:recipes' %}">Recetas</a></li>
-            <li><a href="{% url 'config:admin_panel' %}">Configuracion</a></li>
+            <li><a href="{% url 'pedidos:crear_pedido' %}">Nuevo Pedido</a></li>
+            <li><a href="{% url 'pedidos:cola_pedidos' %}">Cola de Pedidos</a></li>
+            <li><a href="{% url 'pedidos:historial_pedidos' %}">Historial</a></li>
+            <li><a href="{% url 'menu:listar_hamburguesas' %}">Hamburguesas</a></li>
+            <li><a href="{% url 'menu:listar_adicionales' %}">Adicionales</a></li>
+            <li><a href="{% url 'inventario:ver_inventario' %}">Inventario</a></li>
+            <li><a href="{% url 'inventario:listar_ingredientes' %}">Ingredientes</a></li>
+            <li><a href="{% url 'inventario:ver_recetas' %}">Recetas</a></li>
+            <li><a href="{% url 'reportes:reportes_ventas' %}">Reportes</a></li>
+            <li><a href="{% url 'costos:ver_costos' %}">Costos</a></li>
+            <li><a href="{% url 'config:panel_config' %}">Configuracion</a></li>
         </ul>
     </nav>
 
     <main>
         <header>
-            <h1>{% block header %}{% endblock %}</h1>
+            <h1>{% block encabezado %}{% endblock %}</h1>
         </header>
 
-        <div class="content">
-            {% block content %}{% endblock %}
+        {# Los avisos que mandan las vistas con messages.success(...) #}
+        {% if messages %}
+        <div class="mensajes">
+            {% for mensaje in messages %}
+            <div class="alerta alerta-{{ mensaje.tags }}">{{ mensaje }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="contenido">
+            {% block contenido %}{% endblock %}
         </div>
     </main>
-
-    <script src="/static/js/app.js"></script>
-    {% block scripts %}{% endblock %}
 </body>
 </html>

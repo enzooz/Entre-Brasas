@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Pedido #{{ pedido.pk }} - Entre Brasas{% endblock %}
+{% block encabezado %}Pedido #{{ pedido.pk }}{% endblock %}
+
+{% block contenido %}
+<a href="{% url 'pedidos:cola_pedidos' %}" class="back-link">&laquo; Volver a la cola</a>
+
+<div class="card">
+    <h2>Cliente</h2>
+    <p><strong>{{ pedido.cliente_nombre }}</strong></p>
+    <p>Telefono: {{ pedido.cliente_telefono }}</p>
+    <p>Direccion: {{ pedido.cliente_direccion }}</p>
+    {% if pedido.observaciones %}
+    <p>Observaciones: {{ pedido.observaciones }}</p>
+    {% endif %}
+    <p>
+        Estado:
+        <span class="badge badge-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span>
+    </p>
+    <p>Fecha: {{ pedido.fecha_creacion|date:"d/m/Y H:i" }}</p>
+</div>
+
+<div class="card">
+    <h2>Productos</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Cantidad</th>
+                <th>Hamburguesa</th>
+                <th>Adicionales</th>
+                <th>Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in pedido.items.all %}
+            <tr>
+                <td>{{ item.cantidad }}</td>
+                <td>{{ item.hamburguesa.nombre }} (${{ item.precio_unitario }} c/u)</td>
+                <td>
+                    {% for adicional in item.adicionales.all %}
+                        {{ adicional.adicional.nombre }} (${{ adicional.precio }})<br>
+                    {% empty %}
+                        Sin adicionales
+                    {% endfor %}
+                </td>
+                {# subtotal es la property que calculamos en el modelo #}
+                <td>${{ item.subtotal }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>Totales</h2>
+    <div class="cost-summary">
+        <p>Hamburguesas: ${{ total_hamburguesas }}</p>
+        <p>Adicionales: ${{ total_adicionales }}</p>
+        <p>
+            Envio: ${{ pedido.costo_envio }}
+            {% if pedido.retiro_local %}
+                (retira en el local)
+            {% else %}
+                ({{ pedido.distancia_km }} km)
+            {% endif %}
+        </p>
+        <p>Metodo de pago: {{ pedido.get_metodo_pago_display }}</p>
+        <p class="total-highlight">TOTAL: ${{ pedido.total }}</p>
+    </div>
+</div>
+
+{# Las acciones solo tienen sentido si el pedido sigue abierto. #}
+{% if pedido.estado != 'entregado' and pedido.estado != 'cancelado' %}
+<div class="card">
+    <h2>Acciones</h2>
+
+    <form method="POST" action="{% url 'pedidos:avanzar_pedido' pedido.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">Avanzar al siguiente estado</button>
+    </form>
+
+    <hr>
+
+    <form method="POST" action="{% url 'pedidos:cancelar_pedido' pedido.pk %}">
+        {% csrf_token %}
+
+        <p>
+            <label>Motivo de la cancelacion</label>
+            <input type="text" name="motivo" class="form-control">
+        </p>
+
+        {# Solo se puede devolver stock si el pedido llego a descontarlo. #}
+        {% if pedido.estado == 'en_preparacion' or pedido.estado == 'en_camino' %}
+        <p>
+            <label>
+                <input type="checkbox" name="devolver_stock" value="si">
+                Devolver los ingredientes al inventario
+            </label>
+        </p>
+        {% endif %}
+
+        <button type="submit" class="btn btn-danger">Cancelar pedido</button>
+    </form>
+</div>
+{% endif %}
+
+<div class="card">
+    <h2>Historial de estados</h2>
+    <ul>
+        {% for cambio in pedido.historial.all %}
+        <li>
+            {{ cambio.fecha|date:"d/m/Y H:i" }} -
+            de {{ cambio.estado_anterior }} a {{ cambio.estado_nuevo }}
+            {% if cambio.observacion %} ({{ cambio.observacion }}){% endif %}
+        </li>
+        {% empty %}
+        <li>Todavia no hubo cambios de estado.</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Reportes - Entre Brasas{% endblock %}
+{% block encabezado %}Reportes de ventas{% endblock %}
+
+{% block contenido %}
+
+<form method="GET" class="filter-bar">
+    <label>Desde</label>
+    <input type="date" name="fecha_desde" class="form-control" value="{{ fecha_desde }}">
+
+    <label>Hasta</label>
+    <input type="date" name="fecha_hasta" class="form-control" value="{{ fecha_hasta }}">
+
+    <button type="submit" class="btn btn-primary">Filtrar</button>
+    <a href="{% url 'reportes:reportes_ventas' %}" class="btn btn-secondary">Limpiar</a>
+</form>
+
+<p><small>Solo se cuentan los pedidos entregados. Los cancelados no son venta.</small></p>
+
+<div class="card">
+    <h2>Resumen</h2>
+    <div class="cost-summary">
+        <p class="total-highlight">Ventas totales: ${{ total_vendido }}</p>
+        <p>Pedidos entregados: {{ cantidad_pedidos }}</p>
+        <p>Ticket promedio: ${{ ticket_promedio }}</p>
+        <p>Cobrado por envios: ${{ total_envios }}</p>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Como pagaron</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Metodo</th>
+                <th>Pedidos</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Efectivo</td>
+                <td>{{ pagos_efectivo }}</td>
+            </tr>
+            <tr>
+                <td>Transferencia o QR</td>
+                <td>{{ pagos_transferencia }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>Hamburguesas mas vendidas</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Hamburguesa</th>
+                <th>Unidades vendidas</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for fila in top_hamburguesas %}
+            <tr>
+                <td>{{ fila.nombre }}</td>
+                <td>{{ fila.cantidad }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="2">Todavia no hay ventas en este periodo.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>Adicionales mas pedidos</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Adicional</th>
+                <th>Unidades vendidas</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for fila in top_adicionales %}
+            <tr>
+                <td>{{ fila.nombre }}</td>
+                <td>{{ fila.cantidad }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="2">Todavia no se vendieron adicionales en este periodo.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

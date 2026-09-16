@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Inventario - Entre Brasas{% endblock %}
+{% block encabezado %}Inventario{% endblock %}
+
+{% block contenido %}
+<a href="{% url 'inventario:registrar_movimiento' %}" class="btn btn-primary">Registrar movimiento</a>
+
+{# Este aviso aparece solo si hay ingredientes por debajo del minimo. #}
+{% if faltantes %}
+<div class="alerta alerta-warning">
+    <strong>Hay que reponer:</strong>
+    {% for ingrediente in faltantes %}
+        {{ ingrediente.nombre }} ({{ ingrediente.stock_actual }} {{ ingrediente.unidad }}){% if not forloop.last %}, {% endif %}
+    {% endfor %}
+</div>
+{% endif %}
+
+<table>
+    <thead>
+        <tr>
+            <th>Ingrediente</th>
+            <th>Stock actual</th>
+            <th>Stock minimo</th>
+            <th>Precio de compra</th>
+            <th>Estado</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for ingrediente in ingredientes %}
+        <tr>
+            <td>{{ ingrediente.nombre }}</td>
+            <td>{{ ingrediente.stock_actual }} {{ ingrediente.unidad }}</td>
+            <td>{{ ingrediente.stock_minimo }} {{ ingrediente.unidad }}</td>
+            <td>${{ ingrediente.precio_compra }}</td>
+            <td>
+                {# stock_bajo es la property del modelo Ingrediente #}
+                {% if ingrediente.stock_bajo %}
+                    <span class="badge badge-cancelado">Reponer</span>
+                {% else %}
+                    <span class="badge badge-entregado">OK</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5">No hay ingredientes cargados.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

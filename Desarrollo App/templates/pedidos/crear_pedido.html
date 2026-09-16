@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Nuevo pedido - Entre Brasas{% endblock %}
+{% block encabezado %}Nuevo pedido{% endblock %}
+
+{% block contenido %}
+<form method="POST">
+    {% csrf_token %}
+
+    <div class="card">
+        <h2>Datos del cliente</h2>
+        <p>
+            <label>Nombre *</label>
+            <input type="text" name="cliente_nombre" class="form-control" required>
+        </p>
+        <p>
+            <label>Telefono *</label>
+            <input type="text" name="cliente_telefono" class="form-control" required>
+        </p>
+        <p>
+            <label>Direccion *</label>
+            <input type="text" name="cliente_direccion" class="form-control" required>
+        </p>
+        <p>
+            <label>Observaciones</label>
+            <input type="text" name="observaciones" class="form-control"
+                   placeholder="Por ejemplo: sin cebolla">
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>Productos</h2>
+
+        {# Aca adentro va una fila por cada hamburguesa del pedido. #}
+        {# El boton de abajo copia esta fila para agregar mas productos. #}
+        <div id="listaProductos">
+            <div class="producto-item">
+                <p>
+                    <label>Hamburguesa *</label>
+                    <select name="hamburger_ids[]" class="form-control selector-hamburguesa"
+                            required onchange="mostrarAdicionales(this)">
+                        <option value="">Elegir hamburguesa...</option>
+                        {% for hamburguesa in hamburguesas %}
+                        <option value="{{ hamburguesa.pk }}" data-precio="{{ hamburguesa.precio }}">
+                            {{ hamburguesa.nombre }} - ${{ hamburguesa.precio }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </p>
+                <p>
+                    <label>Cantidad *</label>
+                    <input type="number" name="quantities[]" class="form-control cantidad"
+                           value="1" min="1" required onchange="calcularTotal()">
+                </p>
+                <div class="addons-container">
+                    <label>Adicionales:</label>
+                </div>
+            </div>
+        </div>
+
+        <button type="button" class="btn btn-secondary" onclick="agregarProducto()">
+            + Agregar otra hamburguesa
+        </button>
+    </div>
+
+    <div class="card">
+        <h2>Envio</h2>
+        <p>
+            <label>Retira en el local?</label>
+            <select name="retiro_local" id="retiroLocal" class="form-control" onchange="calcularTotal()">
+                <option value="false">No, con envio a domicilio</option>
+                <option value="true">Si, retira en el local</option>
+            </select>
+        </p>
+        <p id="filaDistancia">
+            <label>Distancia (km)</label>
+            <input type="number" name="distancia_km" id="distancia" class="form-control"
+                   value="0" min="0" step="0.1" onchange="calcularTotal()">
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>Metodo de pago *</h2>
+        <p>
+            <input type="radio" name="metodo_pago" value="efectivo" id="pagoEfectivo" required>
+            <label for="pagoEfectivo">Efectivo</label>
+        </p>
+        <p>
+            <input type="radio" name="metodo_pago" value="transferencia" id="pagoTransferencia">
+            <label for="pagoTransferencia">Transferencia o QR</label>
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>Resumen</h2>
+        <div class="cost-summary">
+            <p>Hamburguesas: $<span id="totalHamburguesas">0</span></p>
+            <p>Adicionales: $<span id="totalAdicionales">0</span></p>
+            <p>Envio: $<span id="totalEnvio">0</span></p>
+            <p class="total-highlight">TOTAL: $<span id="totalGeneral">0</span></p>
+        </div>
+        <p><small>El total definitivo lo calcula el servidor al guardar el pedido.</small></p>
+    </div>
+
+    <div class="form-actions">
+        <a href="{% url 'pedidos:cola_pedidos' %}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Crear pedido</button>
+    </div>
+</form>
+
+{# ------------------------------------------------------------------ #}
+{# Este es el unico JavaScript del sistema. Sirve para dos cosas:      #}
+{#   1. mostrar los adicionales que corresponden a cada hamburguesa    #}
+{#   2. ir mostrando el total mientras se carga el pedido              #}
+{# La cuenta que vale es la que hace Python al guardar; esta es solo   #}
+{# para que el que toma el pedido vea el total sin esperar.            #}
+{# ------------------------------------------------------------------ #}
+<script>
+// Los adicionales que cargamos desde Django, con las hamburguesas
+// en las que esta disponible cada uno.
+var ADICIONALES = [
+    {% for adicional in adicionales %}
+    {
+        id: {{ adicional.pk }},
+        nombre: "{{ adicional.nombre }}",
+        precio: {{ adicional.precio }},
+        hamburguesas: [{% for h in adicional.hamburguesas.all %}{{ h.pk }}{% if not forloop.last %}, {% endif %}{% endfor %}]
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+
+// Los valores de envio que configuro el duenio del local.
+var TARIFA_KM = {{ configuracion.tarifa_km }};
+var DISTANCIA_MINIMA = {{ configuracion.distancia_minima }};
+var COSTO_MINIMO_ENVIO = {{ configuracion.costo_minimo_envio }};
+
+
+// Cuando se elige una hamburguesa, mostramos sus adicionales.
+function mostrarAdicionales(selector) {
+    var idHamburguesa = parseInt(selector.value);
+    var fila = selector.closest('.producto-item');
+    var caja = fila.querySelector('.addons-container');
+
+    // Limpiamos lo que hubiera de la hamburguesa anterior.
+    caja.innerHTML = '<label>Adicionales:</label>';
+
+    if (!idHamburguesa) {
+        calcularTotal();
+        return;
+    }
+
+    for (var i = 0; i < ADICIONALES.length; i++) {
+        var adicional = ADICIONALES[i];
+
+        // indexOf devuelve -1 si el numero no esta en la lista.
+        if (adicional.hamburguesas.indexOf(idHamburguesa) === -1) {
+            continue;
+        }
+
+        var etiqueta = document.createElement('label');
+        var casilla = document.createElement('input');
+
+        casilla.type = 'checkbox';
+        // El nombre del campo lleva el numero de la hamburguesa, asi Python
+        // sabe a cual de las hamburguesas del pedido corresponde el adicional.
+        casilla.name = 'adicionales_' + idHamburguesa + '[]';
+        casilla.value = adicional.id;
+        casilla.className = 'casilla-adicional';
+        casilla.dataset.precio = adicional.precio;
+        casilla.onchange = calcularTotal;
+
+        etiqueta.appendChild(casilla);
+        etiqueta.appendChild(document.createTextNode(' ' + adicional.nombre + ' ($' + adicional.precio + ')'));
+        caja.appendChild(etiqueta);
+    }
+
+    calcularTotal();
+}
+
+
+// Recalcula los totales que se muestran en el resumen.
+function calcularTotal() {
+    var totalHamburguesas = 0;
+    var totalAdicionales = 0;
+
+    var filas = document.querySelectorAll('.producto-item');
+
+    for (var i = 0; i < filas.length; i++) {
+        var fila = filas[i];
+        var selector = fila.querySelector('.selector-hamburguesa');
+        var cantidad = parseInt(fila.querySelector('.cantidad').value) || 0;
+
+        if (selector.selectedIndex > 0) {
+            var precio = parseInt(selector.options[selector.selectedIndex].dataset.precio) || 0;
+            totalHamburguesas = totalHamburguesas + (precio * cantidad);
+        }
+
+        var marcados = fila.querySelectorAll('.casilla-adicional:checked');
+        for (var j = 0; j < marcados.length; j++) {
+            totalAdicionales = totalAdicionales + (parseInt(marcados[j].dataset.precio) * cantidad);
+        }
+    }
+
+    // El envio se calcula con las mismas reglas que usa Python en calculos.py.
+    var retiraEnLocal = document.getElementById('retiroLocal').value === 'true';
+    var costoEnvio = 0;
+
+    // Si retira en el local escondemos el campo de la distancia.
+    document.getElementById('filaDistancia').style.display = retiraEnLocal ? 'none' : 'block';
+
+    if (!retiraEnLocal) {
+        var distancia = parseFloat(document.getElementById('distancia').value) || 0;
+
+        if (distancia >= DISTANCIA_MINIMA) {
+            costoEnvio = distancia * TARIFA_KM;
+
+            if (costoEnvio < COSTO_MINIMO_ENVIO) {
+                costoEnvio = COSTO_MINIMO_ENVIO;
+            }
+        }
+    }
+
+    costoEnvio = Math.round(costoEnvio);
+
+    document.getElementById('totalHamburguesas').textContent = totalHamburguesas;
+    document.getElementById('totalAdicionales').textContent = totalAdicionales;
+    document.getElementById('totalEnvio').textContent = costoEnvio;
+    document.getElementById('totalGeneral').textContent = totalHamburguesas + totalAdicionales + costoEnvio;
+}
+
+
+// Agrega otra fila de producto, copiando la primera.
+function agregarProducto() {
+    var lista = document.getElementById('listaProductos');
+    var copia = lista.querySelector('.producto-item').cloneNode(true);
+
+    // La copia viene con lo que tenia la original, asi que la limpiamos.
+    copia.querySelector('.selector-hamburguesa').selectedIndex = 0;
+    copia.querySelector('.cantidad').value = 1;
+    copia.querySelector('.addons-container').innerHTML = '<label>Adicionales:</label>';
+
+    var botonQuitar = document.createElement('button');
+    botonQuitar.type = 'button';
+    botonQuitar.className = 'btn btn-danger';
+    botonQuitar.textContent = 'Quitar';
+    botonQuitar.onclick = function () {
+        copia.remove();
+        calcularTotal();
+    };
+
+    copia.appendChild(botonQuitar);
+    lista.appendChild(copia);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Costos - Entre Brasas{% endblock %}
+{% block encabezado %}Costos y ganancia por hamburguesa{% endblock %}
+
+{% block contenido %}
+
+<div class="alerta alerta-info">
+    El costo de los ingredientes sale de la receta de cada hamburguesa y del
+    precio de la ultima compra de cada insumo.
+    La mano de obra se calcula con ${{ costo_hora_mano_obra }} la hora y
+    {{ minutos_preparacion }} minutos de preparacion por hamburguesa.
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Hamburguesa</th>
+            <th>Precio de venta</th>
+            <th>Ingredientes</th>
+            <th>Mano de obra</th>
+            <th>Costo total</th>
+            <th>Ganancia</th>
+            <th>Margen</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for fila in filas %}
+        <tr>
+            <td>
+                {{ fila.hamburguesa.nombre }}
+                {% if not fila.tiene_receta %}
+                    <br><small>(sin receta cargada)</small>
+                {% endif %}
+            </td>
+            <td>${{ fila.hamburguesa.precio }}</td>
+            <td>${{ fila.costo_ingredientes }}</td>
+            <td>${{ fila.costo_mano_obra }}</td>
+            <td>${{ fila.costo_total }}</td>
+            <td>${{ fila.ganancia }}</td>
+            <td>
+                {# Si la ganancia es negativa lo marcamos en rojo #}
+                {% if fila.ganancia < 0 %}
+                    <span class="badge badge-cancelado">{{ fila.margen }}%</span>
+                {% else %}
+                    <span class="badge badge-entregado">{{ fila.margen }}%</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7">No hay hamburguesas activas.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<p>
+    <small>
+        Las hamburguesas sin receta muestran costo de ingredientes en $0.
+        Para que el calculo sea real hay que cargarles la receta en
+        <a href="{% url 'inventario:ver_recetas' %}">la pantalla de recetas</a>.
+    </small>
+</p>
+
+{% endblock %}

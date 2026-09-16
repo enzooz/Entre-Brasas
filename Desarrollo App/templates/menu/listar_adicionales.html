@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Adicionales - Entre Brasas{% endblock %}
+{% block encabezado %}Adicionales{% endblock %}
+
+{% block contenido %}
+<a href="{% url 'menu:crear_adicional' %}" class="btn btn-primary">+ Nuevo adicional</a>
+
+<table>
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Precio</th>
+            <th>Disponible en</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for adicional in adicionales %}
+        <tr>
+            <td>{{ adicional.nombre }}</td>
+            <td>${{ adicional.precio }}</td>
+            <td>
+                {# Recorremos las hamburguesas asociadas a este adicional. #}
+                {# forloop.last nos dice si estamos en la ultima vuelta, #}
+                {# para no dejar una coma colgada al final. #}
+                {% for hamburguesa in adicional.hamburguesas.all %}
+                    {{ hamburguesa.nombre }}{% if not forloop.last %}, {% endif %}
+                {% empty %}
+                    -
+                {% endfor %}
+            </td>
+            <td>
+                {% if adicional.activo %}
+                    <span class="badge badge-entregado">Activo</span>
+                {% else %}
+                    <span class="badge badge-cancelado">Inactivo</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="{% url 'menu:editar_adicional' adicional.pk %}" class="btn btn-info">Editar</a>
+                <a href="{% url 'menu:activar_adicional' adicional.pk %}" class="btn btn-warning">
+                    {% if adicional.activo %}Desactivar{% else %}Activar{% endif %}
+                </a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5">Todavia no hay adicionales cargados.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
