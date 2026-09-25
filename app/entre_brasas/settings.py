@@ -7,7 +7,7 @@ es una opcion que Django busca por nombre.
 import os
 from pathlib import Path
 
-# La carpeta donde esta el proyecto ("Desarrollo App").
+# La carpeta donde esta el proyecto ("app").
 # __file__ es este archivo, .resolve() lo convierte en ruta completa,
 # y cada .parent sube una carpeta.
 BASE_DIR = Path(__file__).resolve().parent.parent

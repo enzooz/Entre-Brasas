@@ -25,7 +25,7 @@ Hoy corre en SQLite. PostgreSQL nunca se usó en la práctica.
 ## ¿Dónde está el archivo?
 
 ```
-C:\Users\nikov\Desktop\Entre Brasas\Desarrollo App\db.sqlite3
+C:\Users\nikov\Desktop\Entre Brasas\app\db.sqlite3
 ```
 
 | Dato | Valor |
@@ -47,7 +47,7 @@ tiene que correr `migrate` + `seed_data`.
 La base no se corre por separado. Se levanta junto con Django:
 
 ```bat
-cd "C:\Users\nikov\Desktop\Entre Brasas\Desarrollo App"
+cd "C:\Users\nikov\Desktop\Entre Brasas\app"
 venv\Scripts\activate
 python manage.py runserver
 ```
@@ -230,7 +230,7 @@ Está en `activo = 0` y ahora tiene un movimiento de salida (0,1 kg del pedido #
 
 Cuando se lo desactivó no tenía ningún movimiento — por eso el sistema lo permitió.
 Ahora que sí los tiene, la función `toggle_ingredient()` va a impedir
-**reactivarlo**. Es el BUG-3 del `Plan_Mejoras_Pendientes.md`, reproducido en los
+**reactivarlo**. Es el BUG-3 del [plan de mejoras](plan-mejoras-pendientes.md), reproducido en los
 datos reales.
 
 ### 5. Quedaron tablas del panel de administración
@@ -247,7 +247,7 @@ esas tablas ya no se crean.
 
 ## Documentos relacionados
 
-- `Plan_Mejoras_Pendientes.md` — bugs, decisiones y tandas de trabajo
-- `Resumen_Backend_EntreBrasas.md` — qué hace cada módulo
-- `Idea_CierreDelDia.md` — propuesta del módulo de cierre diario
-- `Desarrollo App/README.md` — instrucciones de instalación
+- [plan-mejoras-pendientes.md](plan-mejoras-pendientes.md) — bugs, decisiones y tandas de trabajo
+- [backend.md](backend.md) — qué hace cada módulo
+- [ideas/cierre-del-dia.md](ideas/cierre-del-dia.md) — propuesta del módulo de cierre diario
+- [README.md](../README.md) — instrucciones de instalación

@@ -125,7 +125,7 @@ Se creó un usuario administrador:
   de JavaScript por consultas reales a la base de datos)
 - Módulo de reportes de ventas
 - Módulo de costos y rentabilidad
-- Módulo de cierre del día (ver documento "Idea_CierreDelDia.md")
+- Módulo de cierre del día (ver [ideas/cierre-del-dia.md](ideas/cierre-del-dia.md))
 
 ---
 

@@ -265,4 +265,4 @@ Sigue pendiente de antes y no se toca en estas tres tandas:
 - Reemplazar los mocks de `static/js/mocks/` por datos reales del backend.
 - Implementar la app `reports` (hoy es una cáscara vacía, sin migraciones).
 - Implementar la app `costs` (ídem).
-- Módulo "Cerrar el Día" — ver `Idea_CierreDelDia.md`.
+- Módulo "Cerrar el Día" — ver [ideas/cierre-del-dia.md](ideas/cierre-del-dia.md).

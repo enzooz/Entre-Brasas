@@ -12,9 +12,9 @@ Hecho con Django y SQLite.
 ### 1. Requisitos
 Python 3.10 o mas nuevo.
 
-### 2. Ir a la carpeta del proyecto
+### 2. Ir a la carpeta de la aplicacion
 ```bash
-cd "ruta/Desarrollo App"
+cd app
 ```
 
 ### 3. Crear el entorno virtual
@@ -54,7 +54,32 @@ Despues entrar a http://127.0.0.1:8000
 
 ## Como esta organizado
 
-El proyecto esta dividido en seis aplicaciones, una por cada parte del negocio:
+```
+Entre Brasas/
+├── README.md          este archivo
+├── app/               el sistema (proyecto Django)
+│   ├── manage.py
+│   ├── requirements.txt
+│   ├── entre_brasas/  configuracion general
+│   ├── pedidos/ menu/ inventario/ reportes/ costos/ config/
+│   ├── templates/
+│   └── static/
+└── docs/              documentacion del proyecto
+```
+
+### Documentacion
+
+| Documento | De que trata |
+|---|---|
+| [docs/backend.md](docs/backend.md) | Que hace cada modulo del backend |
+| [docs/base-de-datos.md](docs/base-de-datos.md) | Motor, esquema, datos y como se corre la base |
+| [docs/plan-mejoras-pendientes.md](docs/plan-mejoras-pendientes.md) | Bugs, decisiones y tandas de trabajo pendientes |
+| [docs/ideas/cierre-del-dia.md](docs/ideas/cierre-del-dia.md) | Propuesta del modulo "Cerrar el dia" |
+| [docs/presentacion-alcance-completo.pdf](docs/presentacion-alcance-completo.pdf) | Presentacion del alcance del proyecto |
+
+### Dentro de `app/`
+
+El sistema esta dividido en seis aplicaciones, una por cada parte del negocio:
 
 | Carpeta | De que se ocupa |
 |---|---|
@@ -73,7 +98,7 @@ Ademas hay tres carpetas que no son aplicaciones:
 | `templates/` | Las pantallas HTML |
 | `static/` | El archivo de estilos |
 
-### Dentro de cada aplicacion
+#### Dentro de cada aplicacion
 
 Los archivos siempre se llaman igual y hacen siempre lo mismo:
 
