@@ -25,6 +25,15 @@ class Pedido(models.Model):
         ('cancelado', 'Cancelado'),
     ]
 
+    # El recorrido de un pedido, escrito como diccionario: la clave es el
+    # estado de ahora y el valor es el que sigue. Los estados finales
+    # (entregado y cancelado) no estan porque despues de ellos no hay nada.
+    SIGUIENTE_ESTADO = {
+        'pendiente': 'en_preparacion',
+        'en_preparacion': 'en_camino',
+        'en_camino': 'entregado',
+    }
+
     METODOS_PAGO = [
         ('efectivo', 'Efectivo'),
         ('transferencia', 'Transferencia/QR'),
@@ -57,6 +66,20 @@ class Pedido(models.Model):
         ordering = ['fecha_creacion']
         verbose_name = "Pedido"
         verbose_name_plural = "Pedidos"
+
+    @property
+    def siguiente_estado(self):
+        """
+        El estado al que pasaria el pedido si se avanza.
+
+        Devuelve None si el pedido ya esta entregado o cancelado.
+        """
+        return self.SIGUIENTE_ESTADO.get(self.estado)
+
+    @property
+    def siguiente_estado_display(self):
+        """El texto del siguiente estado ("En camino"), para mostrar en el boton."""
+        return dict(self.ESTADOS).get(self.siguiente_estado, '')
 
     def __str__(self):
         return f"Pedido #{self.pk} - {self.cliente_nombre}"
@@ -140,8 +163,11 @@ class HistorialEstado(models.Model):
         on_delete=models.CASCADE
     )
 
-    estado_anterior = models.CharField(max_length=20)
-    estado_nuevo = models.CharField(max_length=20)
+    # Llevan los mismos choices que Pedido.estado para que Django arme
+    # get_estado_anterior_display() y get_estado_nuevo_display(), que
+    # devuelven el texto lindo ("En preparacion") en vez de "en_preparacion".
+    estado_anterior = models.CharField(max_length=20, choices=Pedido.ESTADOS)
+    estado_nuevo = models.CharField(max_length=20, choices=Pedido.ESTADOS)
 
     # Aca se guarda el motivo cuando se cancela un pedido.
     observacion = models.TextField(blank=True, null=True)

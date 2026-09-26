@@ -28,4 +28,40 @@
         <button type="submit" class="btn btn-primary">Registrar</button>
     </div>
 </form>
+
+<script>
+// La unidad de cada ingrediente, cargada desde Django: { id: "kg", ... }
+var UNIDADES = {
+    {% for ingrediente in ingredientes %}
+    "{{ ingrediente.pk }}": "{{ ingrediente.unidad }}",
+    {% endfor %}
+};
+
+var selectorIngrediente = document.getElementById('id_ingrediente');
+var etiquetaCantidad = document.querySelector('label[for="id_cantidad"]');
+var etiquetaPrecio = document.querySelector('label[for="id_precio_unitario"]');
+
+// Cuando se elige un ingrediente, las etiquetas pasan a decir en que
+// unidad va la cantidad y a que unidad corresponde el precio.
+function mostrarUnidad() {
+    var unidad = UNIDADES[selectorIngrediente.value];
+
+    if (unidad) {
+        // "Cantidad (en unidades)" esta bien, pero el precio es "por unidad".
+        var unidadPrecio = unidad === 'unidades' ? 'unidad' : unidad;
+
+        etiquetaCantidad.textContent = 'Cantidad (en ' + unidad + '):';
+        etiquetaPrecio.textContent = 'Precio unitario ($ por ' + unidadPrecio + '):';
+    } else {
+        etiquetaCantidad.textContent = 'Cantidad:';
+        etiquetaPrecio.textContent = 'Precio unitario:';
+    }
+}
+
+selectorIngrediente.addEventListener('change', mostrarUnidad);
+
+// Tambien al cargar la pagina, por si vuelve con un ingrediente ya elegido
+// (cuando el formulario tenia errores).
+mostrarUnidad();
+</script>
 {% endblock %}

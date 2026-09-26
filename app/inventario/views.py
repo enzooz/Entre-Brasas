@@ -94,7 +94,12 @@ def registrar_movimiento(request):
 
     # Llegamos aca si es GET, o si el formulario tenia errores. En ese
     # segundo caso "form" ya viene con los errores adentro para mostrarlos.
-    return render(request, 'inventario/formulario_movimiento.html', {'form': form})
+    return render(request, 'inventario/formulario_movimiento.html', {
+        'form': form,
+        # Para mostrar la unidad (kg, L, etc.) al lado de la cantidad
+        # cuando se elige el ingrediente.
+        'ingredientes': Ingrediente.objects.all(),
+    })
 
 
 def listar_ingredientes(request):

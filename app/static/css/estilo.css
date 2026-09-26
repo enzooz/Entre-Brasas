@@ -23,6 +23,14 @@
     --warning: #FFC107;
     --danger: #DC3545;
     --info: #17A2B8;
+
+    /* Un color por estado del pedido. Se usa en las etiquetas, en el borde
+       de las tarjetas y en el boton que pasa el pedido a ese estado. */
+    --estado-pendiente: var(--warning);       /* amarillo */
+    --estado-en_preparacion: var(--info);     /* turquesa */
+    --estado-en_camino: var(--accent);        /* naranja */
+    --estado-entregado: var(--success);       /* verde */
+    --estado-cancelado: var(--danger);        /* rojo */
 }
 
 /* Reset */
@@ -223,12 +231,15 @@ button, .btn {
     text-decoration: none;
 }
 
-button[type="submit"], .btn-primary {
+/* Los submit son azules por defecto. El :where() le baja la prioridad a
+   esa regla, asi un boton con su propio color (btn-danger, btn-en_camino)
+   lo respeta. Sin esto "Cancelar pedido" salia azul en vez de rojo. */
+:where(button[type="submit"]), .btn-primary {
     background-color: var(--primary);
     color: var(--text-white);
 }
 
-button[type="submit"]:hover, .btn-primary:hover {
+:where(button[type="submit"]):hover, .btn-primary:hover {
     background-color: var(--primary-dark);
     box-shadow: 0 2px 6px rgba(0, 51, 153, 0.3);
 }
@@ -338,24 +349,26 @@ h3 {
     border-left: 5px solid var(--primary);
 }
 
+/* Los nombres de estas clases tienen que coincidir con los valores de
+   Pedido.ESTADOS, porque los templates las arman asi: card-{{ pedido.estado }} */
 .card-pendiente {
-    border-left-color: var(--warning);
+    border-left-color: var(--estado-pendiente);
 }
 
-.card-preparacion {
-    border-left-color: var(--info);
+.card-en_preparacion {
+    border-left-color: var(--estado-en_preparacion);
 }
 
-.card-camino {
-    border-left-color: var(--accent);
+.card-en_camino {
+    border-left-color: var(--estado-en_camino);
 }
 
 .card-entregado {
-    border-left-color: var(--success);
+    border-left-color: var(--estado-entregado);
 }
 
 .card-cancelado {
-    border-left-color: var(--danger);
+    border-left-color: var(--estado-cancelado);
 }
 
 /* Status badges */
@@ -369,29 +382,38 @@ h3 {
     letter-spacing: 0.5px;
 }
 
-.badge-pendiente {
-    background-color: var(--warning);
+/* Etiqueta (badge-) y boton de avanzar (btn-) comparten el color del estado.
+   El boton toma el color del estado AL QUE pasa el pedido. */
+.badge-pendiente, .btn-pendiente {
+    background-color: var(--estado-pendiente);
     color: var(--text-dark);
 }
 
-.badge-preparacion {
-    background-color: var(--info);
+.badge-en_preparacion, .btn-en_preparacion {
+    background-color: var(--estado-en_preparacion);
     color: var(--text-white);
 }
 
-.badge-camino {
-    background-color: var(--accent);
+.badge-en_camino, .btn-en_camino {
+    background-color: var(--estado-en_camino);
     color: var(--text-white);
 }
 
-.badge-entregado {
-    background-color: var(--success);
+.badge-entregado, .btn-entregado {
+    background-color: var(--estado-entregado);
     color: var(--text-white);
 }
 
-.badge-cancelado {
-    background-color: var(--danger);
+.badge-cancelado, .btn-cancelado {
+    background-color: var(--estado-cancelado);
     color: var(--text-white);
+}
+
+/* Al pasar el mouse por un boton de estado, solo se oscurece un poco. */
+.btn-en_preparacion:hover,
+.btn-en_camino:hover,
+.btn-entregado:hover {
+    filter: brightness(0.9);
 }
 
 /* Alert for low stock */
@@ -402,7 +424,7 @@ h3 {
 /* Filter bar */
 .filter-bar {
     display: flex;
-    gap: 18px;
+    gap: 12px;
     margin-bottom: 22px;
     padding: 18px;
     background: var(--bg-white);
@@ -441,36 +463,75 @@ h3 {
     border-color: var(--primary);
 }
 
-/* Order queue specific */
-.order-card {
-    background: var(--bg-white);
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 15px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border: 1px solid var(--border);
+/* Los filtros se reparten todo el ancho de la barra. El buscador de texto
+   se lleva la parte mas grande (flex: 3), los demas campos una parte cada
+   uno y los botones solo lo que ocupan. Si no entran, bajan a otra fila. */
+.filter-bar > * {
+    flex: 1 1 140px;
+    margin-bottom: 0;
 }
 
-.order-card .order-info {
+.filter-bar > input[type="text"] {
+    flex: 3 1 180px;
+}
+
+/* Que el selector no se achique tanto que se corte el texto. */
+.filter-bar > select {
+    min-width: 200px;
+}
+
+.filter-bar > .btn,
+.filter-bar > button {
+    flex: 0 0 auto;
+}
+
+/* Un form que es solo un boton (por ejemplo "Avanzar estado"). Sin esto
+   heredaria el fondo, el borde y el padding de los formularios. */
+form.form-boton {
+    background: none;
+    padding: 0;
+    margin: 0;
+    border: none;
+    box-shadow: none;
+}
+
+/* Order queue specific */
+.order-card {
+    margin-bottom: 15px;
+}
+
+.order-card h2 {
+    margin-top: 0;
+}
+
+/* En la cola el total va como texto: el naranja queda reservado para
+   el estado "En camino". */
+.order-card .total-highlight {
+    background: none;
+    color: var(--text-dark);
+    font-size: 1.2rem;
+    text-align: left;
+    padding: 0;
+    margin-top: 10px;
+}
+
+/* Ver detalle y Avanzar estado: los dos botones del mismo tamano,
+   repartiendose el ancho de la tarjeta. */
+.order-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+}
+
+.order-actions > * {
     flex: 1;
 }
 
-.order-card .order-info h3 {
-    margin: 10px 0 8px 0;
-    color: var(--text-dark);
-}
-
-.order-card .order-info p {
-    margin: 5px 0;
-    color: var(--text-light);
-}
-
-.order-card .order-actions {
-    display: flex;
-    gap: 10px;
+.order-actions .btn {
+    width: 100%;
+    text-align: center;
 }
 
 /* Empty state */

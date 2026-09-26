@@ -75,9 +75,11 @@
 <div class="card">
     <h2>Acciones</h2>
 
-    <form method="POST" action="{% url 'pedidos:avanzar_pedido' pedido.pk %}">
+    <form method="POST" action="{% url 'pedidos:avanzar_pedido' pedido.pk %}" class="form-boton">
         {% csrf_token %}
-        <button type="submit" class="btn btn-success">Avanzar al siguiente estado</button>
+        <button type="submit" class="btn btn-{{ pedido.siguiente_estado }}">
+            Pasar a {{ pedido.siguiente_estado_display }}
+        </button>
     </form>
 
     <hr>
@@ -108,15 +110,21 @@
 <div class="card">
     <h2>Historial de estados</h2>
     <ul>
+        {# Del cambio mas nuevo al mas viejo. El ultimo renglon es la carga #}
+        {# del pedido, que no es un cambio de estado pero es donde empieza todo. #}
         {% for cambio in pedido.historial.all %}
         <li>
             {{ cambio.fecha|date:"d/m/Y H:i" }} -
-            de {{ cambio.estado_anterior }} a {{ cambio.estado_nuevo }}
+            <span class="badge badge-{{ cambio.estado_anterior }}">{{ cambio.get_estado_anterior_display }}</span>
+            &rarr;
+            <span class="badge badge-{{ cambio.estado_nuevo }}">{{ cambio.get_estado_nuevo_display }}</span>
             {% if cambio.observacion %} ({{ cambio.observacion }}){% endif %}
         </li>
-        {% empty %}
-        <li>Todavia no hubo cambios de estado.</li>
         {% endfor %}
+        <li>
+            {{ pedido.fecha_creacion|date:"d/m/Y H:i" }} - Pedido cargado como
+            <span class="badge badge-pendiente">Pendiente</span>
+        </li>
     </ul>
 </div>
 {% endblock %}

@@ -191,18 +191,10 @@ def avanzar_pedido(request, pedido_id):
     """
     pedido = get_object_or_404(Pedido, pk=pedido_id)
 
-    # El recorrido escrito como diccionario: la clave es el estado de ahora
-    # y el valor es el que sigue. Los estados finales no estan en la lista.
-    SIGUIENTE_ESTADO = {
-        'pendiente': 'en_preparacion',
-        'en_preparacion': 'en_camino',
-        'en_camino': 'entregado',
-    }
+    # El recorrido de los estados esta en el modelo (Pedido.SIGUIENTE_ESTADO).
+    nuevo_estado = pedido.siguiente_estado
 
-    nuevo_estado = SIGUIENTE_ESTADO.get(pedido.estado)
-
-    # Si el estado actual no esta en el diccionario, .get() devuelve None:
-    # quiere decir que el pedido ya estaba entregado o cancelado.
+    # None quiere decir que el pedido ya estaba entregado o cancelado.
     if not nuevo_estado:
         messages.error(request, 'Este pedido ya no se puede avanzar')
         return redirect('pedidos:cola_pedidos')

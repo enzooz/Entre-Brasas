@@ -14,11 +14,17 @@
         <option value="cancelado" {% if estado == 'cancelado' %}selected{% endif %}>Solo cancelados</option>
     </select>
 
-    <label>Desde</label>
-    <input type="date" name="fecha_desde" class="form-control" value="{{ fecha_desde }}">
+    {# Cada fecha va en un div con su etiqueta, asi la barra las trata #}
+    {# como un solo elemento y no como dos. #}
+    <div>
+        <label for="fechaDesde">Desde</label>
+        <input type="date" name="fecha_desde" id="fechaDesde" class="form-control" value="{{ fecha_desde }}">
+    </div>
 
-    <label>Hasta</label>
-    <input type="date" name="fecha_hasta" class="form-control" value="{{ fecha_hasta }}">
+    <div>
+        <label for="fechaHasta">Hasta</label>
+        <input type="date" name="fecha_hasta" id="fechaHasta" class="form-control" value="{{ fecha_hasta }}">
+    </div>
 
     <button type="submit" class="btn btn-primary">Filtrar</button>
     <a href="{% url 'pedidos:historial_pedidos' %}" class="btn btn-secondary">Limpiar</a>
@@ -45,7 +51,7 @@
             <td><span class="badge badge-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span></td>
             <td>{{ pedido.get_metodo_pago_display }}</td>
             <td>${{ pedido.total }}</td>
-            <td><a href="{% url 'pedidos:detalle_pedido' pedido.pk %}" class="btn btn-info">Ver</a></td>
+            <td><a href="{% url 'pedidos:detalle_pedido' pedido.pk %}" class="btn btn-secondary">Ver</a></td>
         </tr>
         {% empty %}
         <tr>

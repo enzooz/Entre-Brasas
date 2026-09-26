@@ -43,13 +43,16 @@
 
     <p class="total-highlight">Total: ${{ pedido.total }}</p>
 
-    <div class="form-actions">
-        <a href="{% url 'pedidos:detalle_pedido' pedido.pk %}" class="btn btn-info">Ver detalle</a>
+    <div class="order-actions">
+        <a href="{% url 'pedidos:detalle_pedido' pedido.pk %}" class="btn btn-secondary">Ver detalle</a>
 
         {# Avanzar cambia datos, asi que va por POST y no por link. #}
-        <form method="POST" action="{% url 'pedidos:avanzar_pedido' pedido.pk %}">
+        {# El boton toma el color del estado al que pasa el pedido. #}
+        <form method="POST" action="{% url 'pedidos:avanzar_pedido' pedido.pk %}" class="form-boton">
             {% csrf_token %}
-            <button type="submit" class="btn btn-success">Avanzar estado</button>
+            <button type="submit" class="btn btn-{{ pedido.siguiente_estado }}">
+                Pasar a {{ pedido.siguiente_estado_display }}
+            </button>
         </form>
     </div>
 </div>
