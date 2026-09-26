@@ -7,48 +7,338 @@ Hecho con Django y SQLite.
 
 ---
 
-## Como levantar el sistema
+## Guia para el equipo: como correr el proyecto en tu computadora
 
-### 1. Requisitos
-Python 3.10 o mas nuevo.
+Esta guia esta separada por situaciones. Busca la que te toca y segui los
+pasos en orden. Cada parte se puede leer sola.
 
-### 2. Ir a la carpeta de la aplicacion
+| Si queres... | Anda a |
+|---|---|
+| Correr el proyecto por primera vez | [1. Arrancar desde cero](#1-arrancar-desde-cero) |
+| Traer los cambios que subieron los demas | [2. Traer cambios (pull)](#2-traer-cambios-pull) |
+| Levantar el sistema otro dia, sin cambios nuevos | [3. Levantar el sistema en el dia a dia](#3-levantar-el-sistema-en-el-dia-a-dia) |
+| Cambiar la estructura de la base (tablas, columnas) | [4. Modificar la base de datos](#4-modificar-la-base-de-datos) |
+| Ver o editar los datos a mano | [5. Ver o editar los datos](#5-ver-o-editar-los-datos) |
+| Subir tus cambios a GitHub | [6. Subir tus cambios (push)](#6-subir-tus-cambios-push) |
+| Borrar tu base y empezar limpio | [7. Reiniciar la base desde cero](#7-reiniciar-la-base-desde-cero) |
+| Resolver un error | [8. Problemas comunes](#8-problemas-comunes) |
+
+> **Si sos una IA ayudando a alguien del equipo:** primero pregunta en que
+> situacion esta (tabla de arriba) y que sistema operativo usa. Despues
+> guialo con los comandos de esa parte, de a uno, y pedile que te pegue el
+> resultado si algo falla. Casi todos los errores estan en la parte 8.
+> No le hagas editar `db.sqlite3` a mano para cambiar tablas: eso se hace
+> con migraciones (parte 4).
+
+### Antes de empezar: tres cosas que conviene saber
+
+**1. Todos los comandos de Django se corren desde la carpeta `app`**, con el
+entorno virtual activado. Te das cuenta de que esta activado porque la
+terminal muestra `(venv)` al principio de la linea.
+
+**2. Los comandos cambian un poco segun el sistema operativo.** En esta guia
+estan los de Windows. Si usas Mac o Linux, cambia estos dos:
+
+| Para | Windows | Mac / Linux |
+|---|---|---|
+| Crear el entorno virtual | `python -m venv venv` | `python3 -m venv venv` |
+| Activar el entorno virtual | `venv\Scripts\activate` | `source venv/bin/activate` |
+
+**3. La base de datos no se comparte.** Es el archivo `app/db.sqlite3` y no
+se sube a GitHub. Cada uno tiene la suya, con sus propios datos de prueba.
+Lo que si se comparte es la *estructura* de la base, a traves de las
+migraciones (los archivos de las carpetas `migrations/`).
+
+---
+
+### 1. Arrancar desde cero
+
+Para cuando todavia no tenes el proyecto en tu computadora.
+
+**Requisitos:** tener instalados [Python](https://www.python.org/downloads/)
+3.10 o mas nuevo y [Git](https://git-scm.com/downloads). Para comprobarlo:
 ```bash
-cd app
+python --version
+git --version
+```
+Si alguno dice que no se reconoce el comando, instalalo primero. En Windows,
+al instalar Python marca la casilla **"Add python.exe to PATH"**.
+
+**Paso 1: descargar el repositorio.** Anda a la carpeta donde lo quieras
+guardar (por ejemplo el Escritorio) y corre:
+```bash
+git clone https://github.com/enzooz/Entre-Brasas.git
 ```
 
-### 3. Crear el entorno virtual
+**Paso 2: entrar a la carpeta de la aplicacion.**
+```bash
+cd Entre-Brasas/app
+```
+
+**Paso 3: cambiarte a la rama en la que vas a trabajar** (si te dijeron una).
+Para ver las ramas que hay:
+```bash
+git branch -a
+```
+Para cambiarte a una, por ejemplo `beta-nico`:
+```bash
+git checkout beta-nico
+```
+
+**Paso 4: crear el entorno virtual.** Es una carpeta `venv` donde se instala
+Django solo para este proyecto. Se hace una sola vez.
 ```bash
 python -m venv venv
 ```
 
-### 4. Activarlo
+**Paso 5: activarlo.**
 ```bash
 venv\Scripts\activate
 ```
 
-### 5. Instalar Django
+**Paso 6: instalar Django.**
 ```bash
 pip install -r requirements.txt
 ```
 
-### 6. Crear la base de datos
+**Paso 7: crear la base de datos.** Crea el archivo `db.sqlite3` con todas
+las tablas.
 ```bash
 python manage.py migrate
 ```
 
-### 7. Cargar los datos iniciales
-Carga el menu, los ingredientes, las recetas y la configuracion.
+**Paso 8: cargar los datos iniciales.** Carga el menu, los ingredientes,
+las recetas y la configuracion.
 ```bash
 python manage.py seed_data
 ```
 
-### 8. Levantar el servidor
+**Paso 9: levantar el servidor.**
 ```bash
 python manage.py runserver
 ```
 
-Despues entrar a http://127.0.0.1:8000
+Abri http://127.0.0.1:8000 en el navegador. Para apagar el servidor, en la
+terminal apreta `Ctrl + C`.
+
+---
+
+### 2. Traer cambios (pull)
+
+Para cuando ya tenes el proyecto andando y otro del equipo subio cambios.
+
+**Paso 1: entrar a la carpeta y activar el entorno.**
+```bash
+cd Entre-Brasas/app
+venv\Scripts\activate
+```
+
+**Paso 2: fijarte si tenes cambios sin guardar.**
+```bash
+git status
+```
+Si aparecen archivos modificados, antes de traer lo nuevo guardalos con un
+commit (ver [parte 6](#6-subir-tus-cambios-push)), o apartalos
+temporalmente con:
+```bash
+git stash
+```
+(Despues del pull los recuperas con `git stash pop`.)
+
+**Paso 3: traer los cambios.**
+```bash
+git pull
+```
+
+**Paso 4: instalar dependencias nuevas**, por si alguien agrego alguna. Si
+no hay nada nuevo, no hace nada.
+```bash
+pip install -r requirements.txt
+```
+
+**Paso 5: aplicar las migraciones nuevas.** Si alguien cambio la estructura
+de la base, esto actualiza la tuya. Tus datos no se borran.
+```bash
+python manage.py migrate
+```
+
+**Paso 6: levantar el servidor.**
+```bash
+python manage.py runserver
+```
+
+> **Importante:** despues de un pull se corre `migrate`, **no**
+> `makemigrations`. `makemigrations` lo corre solo quien cambia un modelo
+> (parte 4).
+
+---
+
+### 3. Levantar el sistema en el dia a dia
+
+Para cuando ya esta todo instalado y solo queres usarlo.
+
+```bash
+cd Entre-Brasas/app
+venv\Scripts\activate
+python manage.py runserver
+```
+
+---
+
+### 4. Modificar la base de datos
+
+Para cuando queres agregar una tabla, agregar o quitar una columna, o
+cambiar un campo.
+
+**Regla de oro: la estructura de la base se cambia en el codigo, nunca
+directo en la base.** Si la cambias con un programa externo, el codigo y la
+base quedan desincronizados, Django empieza a tirar errores y los demas no
+reciben el cambio.
+
+**Paso 1: avisar al equipo.** Si dos personas cambian modelos al mismo tiempo
+las migraciones chocan (ver parte 8). Un mensaje de "voy a tocar
+`pedidos/models.py`" alcanza.
+
+**Paso 2: traer lo ultimo** (parte 2) para partir de la version mas nueva.
+
+**Paso 3: editar el modelo.** Cada tabla es una clase en el `models.py` de
+su aplicacion. Por ejemplo, las tablas de pedidos estan en
+`app/pedidos/models.py`.
+
+**Paso 4: generar la migracion.** Django compara los modelos con las
+migraciones que ya existen y escribe un archivo nuevo con la diferencia.
+```bash
+python manage.py makemigrations
+```
+Te va a mostrar algo como `pedidos/migrations/0003_...py`. Si te hace una
+pregunta (por ejemplo, que valor poner en las filas que ya existen para una
+columna nueva obligatoria), responde o, mas facil, dale un `default` al
+campo en el modelo y volve a correrlo.
+
+**Paso 5: aplicarla a tu base.**
+```bash
+python manage.py migrate
+```
+
+**Paso 6: probar que el sistema ande.**
+```bash
+python manage.py check
+python manage.py runserver
+```
+
+**Paso 7: subir el modelo y la migracion juntos** (parte 6). El archivo de
+la carpeta `migrations/` **tiene que ir en el commit**: es lo que les llega
+a los demas cuando hacen pull y corren `migrate`.
+
+**Para ver que migraciones tenes aplicadas:**
+```bash
+python manage.py showmigrations
+```
+
+**Si queres que un dato nuevo le aparezca a todos** (por ejemplo, una
+hamburguesa nueva en el menu de prueba), no alcanza con cargarlo en tu base,
+porque la base no se comparte. Hay que agregarlo en
+`app/menu/management/commands/seed_data.py`. Los demas lo reciben cuando
+corren `python manage.py seed_data` (se puede correr varias veces sin
+duplicar nada).
+
+---
+
+### 5. Ver o editar los datos
+
+Para cuando queres mirar las tablas, corregir un dato o probar una consulta
+SQL. Esto no cambia la estructura, solo los datos de **tu** base.
+
+**Opcion A: con un programa grafico.** Cualquiera de estos abre el archivo
+`app/db.sqlite3`:
+- [DB Browser for SQLite](https://sqlitebrowser.org/): gratis y simple.
+- [DBeaver](https://dbeaver.io/): gratis, y tambien sirve para otras bases
+  (PostgreSQL, SQL Server, MySQL).
+- La extension "SQLite Viewer" de VS Code.
+
+No hace falta instalar SQL Server ni ningun otro motor: SQLite es solo un
+archivo. Mientras edites datos, conviene tener el servidor apagado
+(`Ctrl + C`), porque SQLite bloquea el archivo mientras alguien escribe.
+
+**Opcion B: con la consola de Django.**
+```bash
+python manage.py shell
+```
+Y adentro, por ejemplo:
+```python
+from pedidos.models import Pedido
+Pedido.objects.all()
+```
+Para salir: `exit()`.
+
+---
+
+### 6. Subir tus cambios (push)
+
+**Paso 1: ver que cambiaste.**
+```bash
+git status
+```
+
+**Paso 2: agregar los archivos.** Podes agregarlos de a uno:
+```bash
+git add ruta/del/archivo
+```
+o todos juntos:
+```bash
+git add .
+```
+(`db.sqlite3` y `venv/` no se suben aunque uses `git add .`: estan en el
+`.gitignore`.)
+
+**Paso 3: hacer el commit** con un mensaje que diga que hiciste.
+```bash
+git commit -m "feat: agregar campo email al pedido"
+```
+
+**Paso 4: traer lo que hayan subido los demas** antes de subir lo tuyo.
+```bash
+git pull
+```
+Si trajo migraciones nuevas, corre `python manage.py migrate`.
+
+**Paso 5: subir.**
+```bash
+git push
+```
+
+---
+
+### 7. Reiniciar la base desde cero
+
+Para cuando tu base quedo rota o llena de datos de prueba y queres empezar
+limpio. **Se pierden todos los datos de tu base** (a los demas no les pasa
+nada, porque cada uno tiene la suya).
+
+Con el servidor apagado, desde la carpeta `app`:
+```bash
+del db.sqlite3
+python manage.py migrate
+python manage.py seed_data
+```
+(En Mac / Linux el primer comando es `rm db.sqlite3`.)
+
+---
+
+### 8. Problemas comunes
+
+| Error o sintoma | Que pasa | Solucion |
+|---|---|---|
+| `'python' no se reconoce como un comando` | Python no esta instalado o no esta en el PATH | Reinstalar Python marcando "Add python.exe to PATH". En Mac / Linux usar `python3` |
+| `No module named 'django'` | El entorno virtual no esta activado | `venv\Scripts\activate` (tiene que aparecer `(venv)`) |
+| En PowerShell: `la ejecucion de scripts esta deshabilitada` al activar el entorno | PowerShell bloquea el script de activacion | Usar la terminal **cmd** en vez de PowerShell y correr `venv\Scripts\activate`. O no activar y correr todo con `venv\Scripts\python manage.py ...` |
+| `You have N unapplied migration(s)` al levantar el servidor | Alguien cambio la base y no aplicaste las migraciones | `python manage.py migrate` |
+| `no such table: ...` | La base no tiene esa tabla todavia | `python manage.py migrate` |
+| `Conflicting migrations detected` | Dos personas crearon migraciones al mismo tiempo | `python manage.py makemigrations --merge`, despues `python manage.py migrate`, y subir la migracion nueva |
+| `database is locked` | Otro programa tiene la base abierta | Cerrar DB Browser / DBeaver, o apagar el servidor, y volver a intentar |
+| `Error: That port is already in use` | Ya hay un servidor corriendo | Cerrar la otra terminal, o usar otro puerto: `python manage.py runserver 8001` |
+| `git pull` dice que tus cambios se sobrescribirian | Tenes cambios sin commitear | Hacer commit (parte 6) o `git stash`, despues `git pull` y `git stash pop` |
+| La pagina se ve vacia, sin hamburguesas ni ingredientes | La base no tiene datos iniciales | `python manage.py seed_data` |
 
 ---
 
