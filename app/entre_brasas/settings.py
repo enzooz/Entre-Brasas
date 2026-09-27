@@ -12,17 +12,48 @@ from pathlib import Path
 # y cada .parent sube una carpeta.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# El sistema funciona de dos formas:
+#
+#   - Desarrollo (lo normal): lo que usamos nosotros con "runserver".
+#   - Local del cliente: la instalacion en la compu del local. La activan
+#     instalar.bat e iniciar.bat poniendo ENTRE_BRASAS_PRODUCCION=1.
+#
+# La diferencia principal es donde se guardan los datos. En la compu del
+# cliente van a una carpeta aparte (fuera de la del programa), asi al
+# instalar una version nueva se reemplaza el programa sin tocar los pedidos.
+PRODUCCION = os.environ.get('ENTRE_BRASAS_PRODUCCION') == '1'
+
+if PRODUCCION:
+    # C:/Users/<usuario>/AppData/Local/EntreBrasas
+    DATOS_DIR = Path(os.environ['LOCALAPPDATA']) / 'EntreBrasas'
+    # Las copias de seguridad van a Documentos, donde el cliente las encuentra.
+    COPIAS_DIR = Path.home() / 'Documents' / 'Entre Brasas - Copias de seguridad'
+else:
+    DATOS_DIR = BASE_DIR
+    COPIAS_DIR = BASE_DIR / 'copias_de_seguridad'
+
+DATOS_DIR.mkdir(parents=True, exist_ok=True)
+
 # Clave que Django usa para firmar las cookies y los formularios.
-# En un sistema de verdad tendria que salir de una variable de entorno.
-SECRET_KEY = 'django-insecure-entre-brasas-clave-de-desarrollo'
+# En desarrollo da igual cual sea. En la compu del cliente se genera una al
+# azar la primera vez y se guarda en la carpeta de datos.
+if PRODUCCION:
+    archivo_clave = DATOS_DIR / 'clave_secreta.txt'
+    if not archivo_clave.exists():
+        from django.core.management.utils import get_random_secret_key
+        archivo_clave.write_text(get_random_secret_key())
+    SECRET_KEY = archivo_clave.read_text().strip()
+else:
+    SECRET_KEY = 'django-insecure-entre-brasas-clave-de-desarrollo'
 
 # Con DEBUG en True, si hay un error Django muestra el detalle en pantalla.
-# Sirve mientras desarrollamos.
-DEBUG = True
+# Sirve mientras desarrollamos, pero al cliente le tiene que aparecer un
+# mensaje normal, no una pantalla llena de codigo.
+DEBUG = not PRODUCCION
 
-# Desde que direcciones se puede entrar al sistema.
-# Vacio funciona porque DEBUG esta en True (Django asume que es local).
-ALLOWED_HOSTS = []
+# Desde que direcciones se puede entrar al sistema. En la compu del cliente
+# solo desde esa misma compu.
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 # Las aplicaciones que carga Django al arrancar.
 INSTALLED_APPS = [
@@ -44,6 +75,8 @@ INSTALLED_APPS = [
 # Cada pedido del navegador pasa por esta lista de arriba hacia abajo.
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # Sirve el CSS. Con DEBUG en False Django deja de hacerlo solo.
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',          # protege los formularios
@@ -73,12 +106,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'entre_brasas.wsgi.application'
 
-# Base de datos: un archivo llamado db.sqlite3 dentro de la carpeta del proyecto.
+# Base de datos: un archivo llamado db.sqlite3. En desarrollo esta dentro de
+# la carpeta del proyecto; en la compu del cliente, en la carpeta de datos.
 # SQLite no necesita instalar ni configurar nada: es un solo archivo.
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': DATOS_DIR / 'db.sqlite3',
     }
 }
 
@@ -92,6 +126,29 @@ USE_TZ = True
 # Archivos de estilo (el CSS).
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+# WhiteNoise sirve el CSS directo desde la carpeta static, sin tener que
+# copiarlo antes a otro lado con collectstatic.
+WHITENOISE_USE_FINDERS = True
 
 # Tipo de numero que usa Django para el id automatico de cada tabla.
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# En la compu del cliente los errores no se muestran en pantalla (DEBUG esta
+# apagado), asi que se anotan en un archivo para poder revisarlos despues:
+# C:/Users/<usuario>/AppData/Local/EntreBrasas/errores.log
+if PRODUCCION:
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'handlers': {
+            'archivo': {
+                'class': 'logging.FileHandler',
+                'filename': DATOS_DIR / 'errores.log',
+                'level': 'ERROR',
+                'encoding': 'utf-8',
+            },
+        },
+        'loggers': {
+            'django': {'handlers': ['archivo'], 'level': 'ERROR'},
+        },
+    }

@@ -27,8 +27,23 @@ from config.models import Configuracion
 class Command(BaseCommand):
     help = 'Carga los datos iniciales de Entre Brasas'
 
+    def add_arguments(self, parser):
+        """Opciones extra que acepta el comando."""
+        # instalar.bat lo corre con esta opcion. Asi, si el cliente vuelve a
+        # correr la instalacion para actualizar, no le reaparecen productos
+        # que el haya renombrado o desactivado.
+        parser.add_argument(
+            '--si-esta-vacia',
+            action='store_true',
+            help='Solo carga los datos si todavia no hay hamburguesas cargadas',
+        )
+
     def handle(self, *args, **options):
         """Django ejecuta este metodo cuando se corre el comando."""
+        if options['si_esta_vacia'] and Hamburguesa.objects.exists():
+            self.stdout.write('La base ya tiene datos: no se carga nada.')
+            return
+
         # Usamos self.stdout.write en vez de print para que Django pueda
         # manejar la salida y los colores de la consola.
         self.stdout.write('Cargando datos iniciales...')

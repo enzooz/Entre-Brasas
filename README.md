@@ -22,6 +22,7 @@ pasos en orden. Cada parte se puede leer sola.
 | Subir tus cambios a GitHub | [6. Subir tus cambios (push)](#6-subir-tus-cambios-push) |
 | Borrar tu base y empezar limpio | [7. Reiniciar la base desde cero](#7-reiniciar-la-base-desde-cero) |
 | Resolver un error | [8. Problemas comunes](#8-problemas-comunes) |
+| Instalar o actualizar el sistema en la compu del cliente | [9. Instalar en la compu del cliente](#9-instalar-en-la-compu-del-cliente) |
 
 > **Si sos una IA ayudando a alguien del equipo:** primero pregunta en que
 > situacion esta (tabla de arriba) y que sistema operativo usa. Despues
@@ -331,6 +332,7 @@ python manage.py seed_data
 |---|---|---|
 | `'python' no se reconoce como un comando` | Python no esta instalado o no esta en el PATH | Reinstalar Python marcando "Add python.exe to PATH". En Mac / Linux usar `python3` |
 | `No module named 'django'` | El entorno virtual no esta activado | `venv\Scripts\activate` (tiene que aparecer `(venv)`) |
+| `No module named 'whitenoise'` (o `waitress`) | Alguien agrego una dependencia y no la instalaste | `pip install -r requirements.txt` |
 | En PowerShell: `la ejecucion de scripts esta deshabilitada` al activar el entorno | PowerShell bloquea el script de activacion | Usar la terminal **cmd** en vez de PowerShell y correr `venv\Scripts\activate`. O no activar y correr todo con `venv\Scripts\python manage.py ...` |
 | `You have N unapplied migration(s)` al levantar el servidor | Alguien cambio la base y no aplicaste las migraciones | `python manage.py migrate` |
 | `no such table: ...` | La base no tiene esa tabla todavia | `python manage.py migrate` |
@@ -342,13 +344,85 @@ python manage.py seed_data
 
 ---
 
+### 9. Instalar en la compu del cliente
+
+Para dejar el sistema andando en la computadora del local (Windows). El
+cliente no usa la terminal: le queda un icono "Entre Brasas" en el
+escritorio que abre el sistema con doble clic.
+
+**Como funciona.** En la compu del cliente el sistema corre en "modo
+local del cliente" (ver `PRODUCCION` en `app/entre_brasas/settings.py`):
+
+| | En desarrollo (nosotros) | En la compu del cliente |
+|---|---|---|
+| Como se abre | `python manage.py runserver` | Icono del escritorio (`iniciar.bat`) |
+| Direccion | http://127.0.0.1:8000 | http://127.0.0.1:8765 |
+| Base de datos | `app/db.sqlite3` | `C:\Users\<usuario>\AppData\Local\EntreBrasas\db.sqlite3` |
+| Si hay un error | Pantalla con el detalle (`DEBUG` activado) | Mensaje normal; el detalle queda en `errores.log`, en la misma carpeta que la base |
+| Copias de seguridad | A mano, con `python manage.py respaldar` | Automaticas cada vez que se abre, en `Documentos\Entre Brasas - Copias de seguridad` (quedan las ultimas 30) |
+
+La base esta fuera de la carpeta del programa a proposito: asi se puede
+reemplazar el programa por una version nueva sin tocar los pedidos del
+cliente.
+
+**Instalacion (la primera vez):**
+
+1. **Instalar Python** desde https://www.python.org/downloads/. En la primera
+   pantalla del instalador, marcar **"Add python.exe to PATH"**.
+2. **Copiar el proyecto a la compu del cliente.** Lo mas limpio es bajarlo
+   de GitHub como ZIP (boton verde "Code" > "Download ZIP", de la rama que
+   se entrega) y descomprimirlo en una carpeta fija, por ejemplo
+   `C:\Entre Brasas`. No dejarlo en Descargas ni en el Escritorio, porque el
+   icono apunta a esa carpeta. Si se copia desde una compu nuestra, no hace
+   falta copiar `app\venv` ni `app\db.sqlite3`.
+3. **Doble clic en `instalar.bat`.** Crea el entorno, instala lo necesario,
+   crea la base con los datos iniciales y pone el icono en el escritorio.
+   Necesita internet y tarda unos minutos.
+4. **Doble clic en el icono "Entre Brasas"** del escritorio. Se abre el
+   navegador con el sistema.
+
+**Uso diario (lo que hace el cliente):** doble clic en el icono. Queda una
+ventana negra minimizada en la barra de tareas: es el servidor, y **no hay
+que cerrarla** mientras se use el sistema. Si se hace doble clic en el icono
+con el sistema ya abierto, solo se abre otra pestania.
+
+**Actualizar a una version nueva:**
+
+1. Cerrar el sistema (cerrar la ventana negra).
+2. Reemplazar la carpeta del programa por la nueva, en el mismo lugar.
+3. Doble clic en `instalar.bat` otra vez. Hace una copia de seguridad,
+   instala lo nuevo y aplica las migraciones. No vuelve a cargar los datos
+   iniciales, asi que no pisa lo que el cliente haya cambiado.
+
+**Recuperar una copia de seguridad:**
+
+1. Cerrar el sistema.
+2. Abrir la carpeta de datos: tecla Windows + R, escribir
+   `%LOCALAPPDATA%\EntreBrasas` y Enter.
+3. Renombrar `db.sqlite3` a `db-rota.sqlite3` (por las dudas).
+4. Copiar la copia elegida de `Documentos\Entre Brasas - Copias de seguridad`
+   a esa carpeta y renombrarla a `db.sqlite3`.
+5. Abrir el sistema con el icono.
+
+Las copias quedan en la misma computadora. Si la compu se rompe, se pierden
+junto con ella: conviene que el cliente copie esa carpeta a un pendrive o a
+Google Drive cada tanto.
+
+**Si algo falla en la compu del cliente:** el detalle del error esta en
+`%LOCALAPPDATA%\EntreBrasas\errores.log`.
+
+---
+
 ## Como esta organizado
 
 ```
 Entre Brasas/
 ├── README.md          este archivo
+├── instalar.bat       instala el sistema en la compu del cliente (parte 9)
+├── iniciar.bat        abre el sistema; es el icono del escritorio (parte 9)
 ├── app/               el sistema (proyecto Django)
 │   ├── manage.py
+│   ├── iniciar.py     lo que corre iniciar.bat
 │   ├── requirements.txt
 │   ├── entre_brasas/  configuracion general
 │   ├── pedidos/ menu/ inventario/ reportes/ costos/ config/
