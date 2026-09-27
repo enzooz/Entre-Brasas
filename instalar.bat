@@ -52,7 +52,8 @@ venv\Scripts\python.exe manage.py seed_data --si-esta-vacia || goto error
 
 echo [4/4] Creando el acceso directo en el escritorio...
 rem WindowStyle 7 = la ventana del servidor arranca minimizada.
-powershell -NoProfile -Command "$s = (New-Object -ComObject WScript.Shell).CreateShortcut([Environment]::GetFolderPath('Desktop') + '\Entre Brasas.lnk'); $s.TargetPath = '%~dp0iniciar.bat'; $s.WorkingDirectory = '%~dp0'; $s.WindowStyle = 7; $s.Save()" || goto error
+rem IconLocation = el logo de Entre Brasas en vez del icono generico de .bat.
+powershell -NoProfile -Command "$s = (New-Object -ComObject WScript.Shell).CreateShortcut([Environment]::GetFolderPath('Desktop') + '\Entre Brasas.lnk'); $s.TargetPath = '%~dp0iniciar.bat'; $s.WorkingDirectory = '%~dp0'; $s.WindowStyle = 7; $s.IconLocation = '%~dp0app\static\img\entre-brasas.ico'; $s.Save()" || goto error
 
 echo.
 echo ============================================================
