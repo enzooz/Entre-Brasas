@@ -50,7 +50,7 @@ class Command(BaseCommand):
 
         hamburguesas = self.cargar_hamburguesas()
         ingredientes = self.cargar_ingredientes()
-        self.cargar_adicionales(hamburguesas)
+        self.cargar_adicionales(hamburguesas, ingredientes)
         self.cargar_recetas(hamburguesas, ingredientes)
         self.cargar_configuracion()
 
@@ -64,15 +64,19 @@ class Command(BaseCommand):
         Cada linea de la lista es (nombre, descripcion, precio, incluye papas).
         Devuelve un diccionario {nombre: objeto} para poder usarlo despues
         al armar las recetas y los adicionales.
+
+        Es el menu real del local, sacado de https://entrebrasas.onrender.com/
+        (septiembre 2026).
         """
         datos = [
-            ('Clasica', 'Pan, carne, lechuga, tomate y cebolla', 2500, True),
-            ('Especial', 'Doble carne, bacon, cheddar y cebolla caramelizada', 3200, False),
-            ('Veggie', 'Medallon de verduras, palta y lechuga', 2800, True),
-            ('Doble Bacon', 'Doble carne, doble bacon, cheddar y salsa BBQ', 3800, False),
-            ('Pollo Crispy', 'Pechuga de pollo rebozada, lechuga y mayonesa', 2700, True),
-            ('BBQ', 'Carne, bacon, cebolla crocante y salsa BBQ', 3100, False),
-            ('Hawaiana', 'Carne, jamon, ananá y queso', 2900, True),
+            ('Sagrada', 'Pan brioche, 3 medallones, cheddar y aderezo de la casa.', 16500, True),
+            ('Full', 'Pan brioche, 2 medallones, cheddar, panceta, huevo, cebolla caramelizada y aderezo alioli.', 15500, True),
+            ('La Pepi', 'Pan brioche, 2 medallones, cheddar, cebolla en brunoise, pepinillos y aderezo de la casa.', 14000, True),
+            ('Crispy', 'Pan brioche, 1 medallón, cheddar, panceta, cebolla crispy y aderezo alioli.', 13500, True),
+            ('Freskita', 'Pan brioche, 1 medallón, cheddar, lechuga, tomate, cebolla morada y aderezo de la casa.', 11500, True),
+            ('Baconera', 'Pan brioche, 2 medallones, cheddar, panceta y aderezo de la casa.', 13500, True),
+            ('Tradi', 'Pan brioche, 1 medallón, queso tybo, jamón, tomate, lechuga y mayonesa.', 11500, True),
+            ('Cheese', 'Pan brioche, 1 medallón, cheddar y aderezo de la casa.', 10500, True),
         ]
 
         hamburguesas = {}
@@ -99,25 +103,33 @@ class Command(BaseCommand):
         Carga los insumos de la cocina.
 
         Cada linea es (nombre, stock inicial, unidad, stock minimo, precio de compra).
+
+        Los insumos salen de las descripciones del menu. El stock inicial es
+        una estimacion para que el sistema arranque andando (sin stock no deja
+        pasar pedidos a "en preparacion"): el primer dia hay que contar lo que
+        hay de verdad y corregirlo con un ajuste. El precio de compra va en 0
+        porque no lo sabemos: hay que cargarlo desde Ingredientes para que la
+        pantalla de Costos calcule bien.
         """
         datos = [
-            ('Carne molida', 15, 'kg', 5, 1600),
-            ('Pan de hamburguesa', 50, 'unidades', 10, 80),
-            ('Lechuga', 2, 'kg', 1, 800),
-            ('Tomate', 8, 'unidades', 5, 30),
-            ('Cebolla', 6, 'unidades', 4, 20),
-            ('Bacon', 3, 'kg', 1, 3200),
-            ('Cheddar', 2, 'kg', 1, 2800),
-            ('Palta', 5, 'unidades', 3, 200),
-            ('Pechuga de pollo', 8, 'kg', 3, 2200),
-            ('Mayonesa', 2, 'L', 1, 1200),
-            ('Salsa BBQ', 1.5, 'L', 0.5, 1500),
-            ('Cebolla crocante', 1, 'kg', 0.5, 2000),
-            ('Jamon', 2, 'kg', 1, 1800),
-            ('Anana', 4, 'unidades', 2, 150),
-            ('Huevo', 30, 'unidades', 12, 25),
-            ('Medallon de verduras', 10, 'unidades', 5, 350),
-            ('Queso', 3, 'kg', 1.5, 2400),
+            ('Pan brioche', 60, 'unidades', 20, 0),
+            ('Medallón de carne', 120, 'unidades', 40, 0),
+            ('Cheddar (fetas)', 150, 'unidades', 50, 0),
+            ('Queso tybo (fetas)', 30, 'unidades', 10, 0),
+            ('Panceta', 3, 'kg', 1, 0),
+            ('Jamón', 1, 'kg', 0.3, 0),
+            ('Huevo', 30, 'unidades', 12, 0),
+            ('Lechuga', 1, 'kg', 0.3, 0),
+            ('Tomate', 2, 'kg', 0.5, 0),
+            ('Cebolla', 1, 'kg', 0.3, 0),
+            ('Cebolla morada', 1, 'kg', 0.3, 0),
+            ('Cebolla caramelizada', 1, 'kg', 0.3, 0),
+            ('Cebolla crispy', 1, 'kg', 0.3, 0),
+            ('Pepinillos', 1, 'kg', 0.3, 0),
+            ('Aderezo de la casa', 2, 'L', 0.5, 0),
+            ('Aderezo alioli', 1, 'L', 0.3, 0),
+            ('Mayonesa', 1, 'L', 0.3, 0),
+            ('Papas', 20, 'kg', 5, 0),
         ]
 
         ingredientes = {}
@@ -137,30 +149,38 @@ class Command(BaseCommand):
 
         return ingredientes
 
-    def cargar_adicionales(self, hamburguesas):
+    def cargar_adicionales(self, hamburguesas, ingredientes):
         """
-        Carga los adicionales y los asocia a las hamburguesas donde se ofrecen.
+        Carga los adicionales, con su receta, y los asocia a las hamburguesas.
 
-        Cada linea es (nombre, precio, lista de hamburguesas).
+        Cada linea es (nombre, precio, receta). En el menu dice "Suma a
+        cualquier hamburguesa", asi que cada adicional se ofrece en todas.
+        La receta es lo que descuenta del stock cada vez que se pide.
         """
         datos = [
-            ('Bacon Extra', 500, ['Clasica', 'Especial', 'Doble Bacon', 'BBQ']),
-            ('Guacamole', 400, ['Clasica', 'Veggie', 'Pollo Crispy']),
-            ('Doble Carne', 800, ['Clasica', 'Veggie', 'Pollo Crispy', 'Hawaiana']),
-            ('Cheddar Extra', 300, ['Clasica', 'Especial', 'Veggie', 'Doble Bacon',
-                                    'Pollo Crispy', 'BBQ', 'Hawaiana']),
-            ('Huevo Frito', 250, ['Clasica', 'Especial', 'Doble Bacon', 'BBQ']),
+            ('Medallón extra', 2500, [('Medallón de carne', 1), ('Cheddar (fetas)', 1)]),
+            ('Cheddar extra', 1000, [('Cheddar (fetas)', 2)]),
+            ('Panceta', 2000, [('Panceta', 0.04)]),
+            ('Huevo', 1000, [('Huevo', 1)]),
+            ('Papas fritas', 2000, [('Papas', 0.25)]),
         ]
 
-        for nombre, precio, nombres_hamburguesas in datos:
+        for nombre, precio, receta in datos:
             adicional, creado = Adicional.objects.get_or_create(
                 nombre=nombre,
                 defaults={'precio': precio}
             )
 
             # .add() crea el vinculo en la relacion de muchos a muchos.
-            for nombre_hamburguesa in nombres_hamburguesas:
-                adicional.hamburguesas.add(hamburguesas[nombre_hamburguesa])
+            for hamburguesa in hamburguesas.values():
+                adicional.hamburguesas.add(hamburguesa)
+
+            for nombre_ingrediente, cantidad in receta:
+                Receta.objects.get_or_create(
+                    adicional=adicional,
+                    ingrediente=ingredientes[nombre_ingrediente],
+                    defaults={'cantidad_requerida': cantidad}
+                )
 
             self.stdout.write(f'  Adicional: {nombre}')
 
@@ -174,54 +194,82 @@ class Command(BaseCommand):
 
         Esto es lo que despues lee descontar_stock() en pedidos/calculos.py
         para saber cuanto bajar del inventario por cada hamburguesa vendida.
+
+        El pan, los medallones y el queso salen del menu (una feta por
+        medallon). El resto de las cantidades son estimaciones: hay que
+        confirmarlas con el local y corregirlas desde la pantalla Recetas.
+        Todas incluyen papas, por eso todas llevan una porcion.
         """
         recetas = {
-            'Clasica': [
-                ('Carne molida', 0.200),
-                ('Pan de hamburguesa', 1),
-                ('Lechuga', 0.050),
-                ('Tomate', 2),
-                ('Cebolla', 1),
+            'Sagrada': [
+                ('Pan brioche', 1),
+                ('Medallón de carne', 3),
+                ('Cheddar (fetas)', 3),
+                ('Aderezo de la casa', 0.03),
+                ('Papas', 0.25),
             ],
-            'Especial': [
-                ('Carne molida', 0.400),
-                ('Pan de hamburguesa', 1),
-                ('Bacon', 0.050),
-                ('Cheddar', 0.050),
-                ('Cebolla', 1),
+            'Full': [
+                ('Pan brioche', 1),
+                ('Medallón de carne', 2),
+                ('Cheddar (fetas)', 2),
+                ('Panceta', 0.04),
+                ('Huevo', 1),
+                ('Cebolla caramelizada', 0.04),
+                ('Aderezo alioli', 0.03),
+                ('Papas', 0.25),
             ],
-            'Veggie': [
-                ('Medallon de verduras', 2),
-                ('Pan de hamburguesa', 1),
-                ('Lechuga', 0.050),
-                ('Palta', 1),
+            'La Pepi': [
+                ('Pan brioche', 1),
+                ('Medallón de carne', 2),
+                ('Cheddar (fetas)', 2),
+                ('Cebolla', 0.03),
+                ('Pepinillos', 0.03),
+                ('Aderezo de la casa', 0.03),
+                ('Papas', 0.25),
             ],
-            'Doble Bacon': [
-                ('Carne molida', 0.400),
-                ('Pan de hamburguesa', 1),
-                ('Bacon', 0.100),
-                ('Cheddar', 0.080),
-                ('Salsa BBQ', 0.030),
+            'Crispy': [
+                ('Pan brioche', 1),
+                ('Medallón de carne', 1),
+                ('Cheddar (fetas)', 1),
+                ('Panceta', 0.04),
+                ('Cebolla crispy', 0.03),
+                ('Aderezo alioli', 0.03),
+                ('Papas', 0.25),
             ],
-            'Pollo Crispy': [
-                ('Pechuga de pollo', 0.200),
-                ('Pan de hamburguesa', 1),
-                ('Lechuga', 0.050),
-                ('Mayonesa', 0.020),
+            'Freskita': [
+                ('Pan brioche', 1),
+                ('Medallón de carne', 1),
+                ('Cheddar (fetas)', 1),
+                ('Lechuga', 0.03),
+                ('Tomate', 0.05),
+                ('Cebolla morada', 0.03),
+                ('Aderezo de la casa', 0.03),
+                ('Papas', 0.25),
             ],
-            'BBQ': [
-                ('Carne molida', 0.200),
-                ('Pan de hamburguesa', 1),
-                ('Bacon', 0.050),
-                ('Cebolla crocante', 0.030),
-                ('Salsa BBQ', 0.030),
+            'Baconera': [
+                ('Pan brioche', 1),
+                ('Medallón de carne', 2),
+                ('Cheddar (fetas)', 2),
+                ('Panceta', 0.06),
+                ('Aderezo de la casa', 0.03),
+                ('Papas', 0.25),
             ],
-            'Hawaiana': [
-                ('Carne molida', 0.200),
-                ('Pan de hamburguesa', 1),
-                ('Jamon', 0.050),
-                ('Anana', 2),
-                ('Queso', 0.030),
+            'Tradi': [
+                ('Pan brioche', 1),
+                ('Medallón de carne', 1),
+                ('Queso tybo (fetas)', 1),
+                ('Jamón', 0.03),
+                ('Tomate', 0.05),
+                ('Lechuga', 0.03),
+                ('Mayonesa', 0.02),
+                ('Papas', 0.25),
+            ],
+            'Cheese': [
+                ('Pan brioche', 1),
+                ('Medallón de carne', 1),
+                ('Cheddar (fetas)', 1),
+                ('Aderezo de la casa', 0.03),
+                ('Papas', 0.25),
             ],
         }
 
