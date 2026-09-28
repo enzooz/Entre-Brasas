@@ -10,12 +10,31 @@
 <form method="POST" id="formPedido">
     {% csrf_token %}
 
+    {# Atajo para lo que llega por WhatsApp: se pega el mensaje del cliente y #}
+    {# el formulario se completa solo (ver pedidos/interpretar.py). No guarda  #}
+    {# nada: despues se revisa y se toca "Crear pedido" como siempre.          #}
+    <div class="card card-pegar">
+        <h2>Pegar mensaje de WhatsApp</h2>
+        <p>
+            <label for="mensajeWhatsapp">Copia el mensaje del cliente y pegalo aca</label>
+            <textarea id="mensajeWhatsapp" class="form-control" rows="4" autofocus
+                      placeholder="Agostina&#10;1 pepi&#10;1 crispy doble&#10;Retira"></textarea>
+        </p>
+        <div class="acciones-pegar">
+            <button type="button" class="btn btn-primary" id="botonCompletar" onclick="completarDesdeMensaje()">
+                Completar el pedido
+            </button>
+            <small>o Ctrl + Enter</small>
+        </div>
+        <div id="resultadoMensaje" class="resultado-mensaje" hidden></div>
+    </div>
+
     <div class="card">
         <h2>Cliente</h2>
         <p>
             <label for="clienteNombre">Nombre *</label>
             <input type="text" name="cliente_nombre" id="clienteNombre" class="form-control"
-                   required autofocus autocomplete="off">
+                   required autocomplete="off">
         </p>
         <p>
             <label for="observaciones">Observaciones del pedido</label>
@@ -320,6 +339,151 @@ function calcularTotal() {
     document.getElementById('totalEnvio').textContent = costoEnvio;
     document.getElementById('totalGeneral').textContent = totalHamburguesas + totalAdicionales + costoEnvio;
 }
+
+
+// ---------- Pegar mensaje de WhatsApp ----------
+
+// Manda el mensaje al servidor, que lo interpreta (pedidos/interpretar.py)
+// y devuelve lo que entendio. Con eso se completa el formulario.
+function completarDesdeMensaje() {
+    var mensaje = document.getElementById('mensajeWhatsapp').value.trim();
+    if (!mensaje) {
+        mostrarResultado('Primero pega el mensaje del cliente.', true);
+        return;
+    }
+
+    var datos = new FormData();
+    datos.append('mensaje', mensaje);
+    // Django pide el token de seguridad tambien en estos pedidos.
+    datos.append('csrfmiddlewaretoken', document.querySelector('[name="csrfmiddlewaretoken"]').value);
+
+    fetch('{% url "pedidos:interpretar_mensaje" %}', { method: 'POST', body: datos })
+        .then(function (respuesta) { return respuesta.json(); })
+        .then(completarFormulario)
+        .catch(function () {
+            mostrarResultado('No se pudo leer el mensaje. Carga el pedido a mano.', true);
+        });
+}
+
+
+function completarFormulario(pedido) {
+    // Un mensaje nuevo reemplaza lo que haya dejado el anterior. El nombre
+    // solo se pisa si el mensaje trae uno, por si ya lo habian escrito.
+    if (pedido.nombre) {
+        document.getElementById('clienteNombre').value = pedido.nombre;
+    }
+    document.getElementById('observaciones').value = pedido.observaciones;
+    document.getElementById('clienteDireccion').value = pedido.direccion;
+    document.getElementById('clienteTelefono').value = pedido.telefono;
+    mostrarLinkMaps();
+
+    // Si el mensaje no dice si retira o es envio, se deja sin elegir para
+    // que la persona lo marque (el formulario no deja crear el pedido sin eso).
+    var opcionesEntrega = document.querySelectorAll('input[name="retiro_local"]');
+    for (var k = 0; k < opcionesEntrega.length; k++) {
+        opcionesEntrega[k].checked = pedido.entrega !== '' && opcionesEntrega[k].value === String(pedido.entrega === 'retira');
+    }
+    cambiarEntrega();
+
+    document.querySelector('input[name="metodo_pago"][value="' + (pedido.pago || 'efectivo') + '"]').checked = true;
+
+    // Las hamburguesas del mensaje reemplazan a las que hubiera cargadas.
+    document.getElementById('listaProductos').innerHTML = '';
+
+    for (var i = 0; i < pedido.items.length; i++) {
+        var item = pedido.items[i];
+        var boton = document.querySelector('.boton-menu[data-id="' + item.hamburguesa_id + '"]');
+        if (!boton) {
+            continue;
+        }
+
+        crearFila(item.hamburguesa_id, boton.dataset.nombre, parseInt(boton.dataset.precio));
+        var filas = document.querySelectorAll('.fila-producto');
+        var fila = filas[filas.length - 1];
+
+        fila.querySelector('.cantidad').value = item.cantidad;
+        fila.querySelector('.campo-nota').value = item.nota;
+
+        var medallones = fila.querySelector('.selector-medallones input[value="' + item.medallones + '"]');
+        if (medallones) {
+            medallones.checked = true;
+        }
+
+        for (var j = 0; j < item.adicionales.length; j++) {
+            var casilla = fila.querySelector('.chips-adicionales input[value="' + item.adicionales[j] + '"]');
+            if (casilla) {
+                casilla.checked = true;
+            }
+        }
+    }
+
+    calcularTotal();
+    avisarQueSeCompleto(pedido);
+}
+
+
+// Cuenta lo que se completo y avisa lo que falta revisar.
+function avisarQueSeCompleto(pedido) {
+    var cantidadHamburguesas = 0;
+    for (var i = 0; i < pedido.items.length; i++) {
+        cantidadHamburguesas = cantidadHamburguesas + pedido.items[i].cantidad;
+    }
+
+    var partes = [];
+    if (cantidadHamburguesas === 0) {
+        partes.push('<strong>No encontre hamburguesas del menu en el mensaje.</strong> Agregalas tocando los botones.');
+    } else {
+        var texto = cantidadHamburguesas === 1 ? 'Se cargo <strong>1 hamburguesa</strong>' : 'Se cargaron <strong>' + cantidadHamburguesas + ' hamburguesas</strong>';
+        partes.push(texto + '. Revisa el pedido antes de crearlo.');
+    }
+
+    if (!pedido.entrega) {
+        partes.push('Falta elegir si <strong>retira o es envio</strong>.');
+    } else if (pedido.entrega === 'envio') {
+        partes.push('Es envio: <strong>completa los km</strong>' + (pedido.telefono ? '' : ' y el telefono') + '.');
+    }
+
+    var campoNombre = document.getElementById('clienteNombre');
+    if (!campoNombre.value.trim()) {
+        partes.push('Falta el <strong>nombre</strong> del cliente.');
+    }
+
+    if (pedido.no_entendido.length > 0) {
+        // Lo que no se entendio quedo en Observaciones; se muestra para que lo lean.
+        var lista = pedido.no_entendido.map(function (texto) {
+            var elemento = document.createElement('li');
+            elemento.textContent = texto;
+            return elemento.outerHTML;
+        }).join('');
+        partes.push('Esto no lo entendi y lo deje en Observaciones:<ul>' + lista + '</ul>');
+    }
+
+    mostrarResultado(partes.join('<br>'), cantidadHamburguesas === 0);
+
+    // Llevamos el cursor a lo primero que falta completar.
+    if (!campoNombre.value.trim()) {
+        campoNombre.focus();
+    } else if (pedido.entrega === 'envio') {
+        document.getElementById('distancia').focus();
+    }
+}
+
+
+function mostrarResultado(html, esAdvertencia) {
+    var caja = document.getElementById('resultadoMensaje');
+    caja.innerHTML = html;
+    caja.classList.toggle('resultado-advertencia', esAdvertencia);
+    caja.hidden = false;
+}
+
+
+// Ctrl + Enter en la caja del mensaje = "Completar el pedido".
+document.getElementById('mensajeWhatsapp').addEventListener('keydown', function (evento) {
+    if (evento.key === 'Enter' && evento.ctrlKey) {
+        evento.preventDefault();
+        completarDesdeMensaje();
+    }
+});
 
 
 var formulario = document.getElementById('formPedido');

@@ -18,6 +18,8 @@ app_name = 'pedidos'
 
 urlpatterns = [
     path('nuevo/', views.crear_pedido, name='crear_pedido'),
+    # Lo usa el boton "Completar desde el mensaje" de Nuevo pedido.
+    path('nuevo/interpretar/', views.interpretar_mensaje_view, name='interpretar_mensaje'),
     path('cola/', views.cola_pedidos, name='cola_pedidos'),
     path('historial/', views.historial_pedidos, name='historial_pedidos'),
 

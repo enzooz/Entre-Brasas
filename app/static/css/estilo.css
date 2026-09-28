@@ -789,6 +789,43 @@ form .chips-adicionales .chip {
     font-weight: 600;
 }
 
+/* ---------- Pegar mensaje de WhatsApp ---------- */
+.card-pegar textarea {
+    resize: vertical;
+    font-family: inherit;
+}
+
+.acciones-pegar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.acciones-pegar small {
+    color: var(--text-light);
+}
+
+.resultado-mensaje {
+    margin-top: 14px;
+    padding: 12px 16px;
+    border: 1px solid #B7DFC4;
+    border-radius: 6px;
+    background: #EEF8F1;
+    color: #1E5631;
+    font-size: 0.92rem;
+    line-height: 1.6;
+}
+
+.resultado-mensaje ul {
+    margin: 4px 0 0 20px;
+}
+
+.resultado-advertencia {
+    border-color: #F3D48A;
+    background: #FFF8E6;
+    color: #6B4E00;
+}
+
 /* ---------- Comanda para cocina ---------- */
 .card-comanda {
     border-left: 5px solid var(--success);

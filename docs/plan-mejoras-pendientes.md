@@ -17,6 +17,7 @@ Recetas (lista "PESTAÑA NUEVO PEDIDO"), cruzada contra el código actual.
 | Nuevo pedido | Agregar más de un producto | ✅ Hecho |
 | Nuevo pedido | Adicionales por cada producto | ✅ Hecho (bug B-1 resuelto el 27/09) |
 | Nuevo pedido | Carga rápida + comanda para cocina por WhatsApp | ✅ Hecho (27/09) |
+| Nuevo pedido | Pegar el mensaje de WhatsApp y completar solo | ✅ Hecho (28/09) |
 | Nuevo pedido | Ocultar "Distancia" si retira en el local | ✅ Hecho |
 | Nuevo pedido | Mostrar el total antes de confirmar | ✅ Hecho |
 | Nuevo pedido | Guardar lo escrito con localStorage | ⏳ Pendiente — Tanda 1 |
@@ -147,8 +148,15 @@ una sola vez y el sistema arma ese mensaje solo.
 - **Datos nuevos:** `ItemPedido.nota`, `Adicional.es_medallon_extra` y
   `Configuracion.whatsapp_cocina` (migraciones `pedidos/0003`, `menu/0002`,
   `config/0002`).
-- **Pendiente para más adelante:** pegar el mensaje del cliente y que el
-  formulario se complete solo.
+- **Pegar mensaje de WhatsApp (28/09/2026):** arriba de Nuevo pedido hay una
+  caja para pegar el mensaje del cliente. `app/pedidos/interpretar.py` lo lee
+  renglón por renglón y completa el formulario: hamburguesas aunque estén mal
+  escritas ("crispi", "tradicional"), cantidades ("2", "dos", "x2"),
+  doble/triple, adicionales ("con panceta"), notas ("sin cebolla"), retira o
+  envío, link de Maps o dirección escrita, teléfono, forma de pago y nombre
+  (también el del contacto si se copió desde WhatsApp Web). Lo que no entiende
+  queda en Observaciones y se avisa. No guarda nada: siempre se revisa y se
+  toca "Crear pedido".
 
 ## HECHO EN ESTA RONDA (25/09/2026)
 

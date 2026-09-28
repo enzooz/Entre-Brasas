@@ -17,6 +17,8 @@ from urllib.parse import quote
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 
 from menu.models import Hamburguesa, Adicional
 from config.models import Configuracion
@@ -24,6 +26,7 @@ from config.models import Configuracion
 from .models import Pedido, ItemPedido, AdicionalDeItem, HistorialEstado
 from .calculos import calcular_envio, calcular_total, descontar_stock, devolver_stock
 from .comanda import armar_comanda
+from .interpretar import interpretar_mensaje
 
 
 def crear_pedido(request):
@@ -96,6 +99,27 @@ def crear_pedido(request):
             'costo_minimo_envio': configuracion.costo_minimo_envio,
         },
     })
+
+
+@require_POST
+def interpretar_mensaje_view(request):
+    """
+    Recibe el mensaje de WhatsApp que pego el usuario y devuelve lo que se
+    entendio, para que el formulario de Nuevo pedido se complete solo.
+
+    No guarda nada. Responde JSON (datos, no una pantalla) porque lo pide
+    el JavaScript del formulario sin recargar la pagina.
+    """
+    adicionales = Adicional.objects.filter(activo=True)
+
+    resultado = interpretar_mensaje(
+        request.POST.get('mensaje', ''),
+        hamburguesas=Hamburguesa.objects.filter(activa=True),
+        adicionales=adicionales.filter(es_medallon_extra=False),
+        medallon_extra=adicionales.filter(es_medallon_extra=True).first(),
+    )
+
+    return JsonResponse(resultado)
 
 
 def datos_de_adicional(adicional):
