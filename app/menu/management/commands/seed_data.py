@@ -168,7 +168,11 @@ class Command(BaseCommand):
         for nombre, precio, receta in datos:
             adicional, creado = Adicional.objects.get_or_create(
                 nombre=nombre,
-                defaults={'precio': precio}
+                defaults={
+                    'precio': precio,
+                    # El medallon extra es el que hace "doble" a una hamburguesa.
+                    'es_medallon_extra': nombre == 'Medallón extra',
+                }
             )
 
             # .add() crea el vinculo en la relacion de muchos a muchos.

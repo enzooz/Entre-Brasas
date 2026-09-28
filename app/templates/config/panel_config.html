@@ -45,6 +45,20 @@
         </p>
     </div>
 
+    <div class="card">
+        <h2>Cocina</h2>
+        <p>
+            <label for="{{ form.whatsapp_cocina.id_for_label }}">WhatsApp de la cocina</label>
+            {{ form.whatsapp_cocina }}
+            <small>
+                El numero del celular de la cocina, con 549 y la caracteristica,
+                sin el 0 ni el 15. Si lo cargas, cada pedido tiene un boton que
+                abre WhatsApp con la comanda ya escrita. Si la cocina usa un
+                grupo, dejalo vacio y usa el boton "Copiar".
+            </small>
+        </p>
+    </div>
+
     <div class="form-actions">
         <button type="submit" class="btn btn-primary">Guardar configuracion</button>
     </div>

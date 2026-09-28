@@ -69,7 +69,7 @@ class AdicionalForm(forms.ModelForm):
 
     class Meta:
         model = Adicional
-        fields = ['nombre', 'precio', 'hamburguesas']
+        fields = ['nombre', 'precio', 'hamburguesas', 'es_medallon_extra']
 
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control'}),

@@ -111,6 +111,10 @@ class ItemPedido(models.Model):
     # siguen mostrando lo que el cliente pago de verdad.
     precio_unitario = models.PositiveIntegerField()
 
+    # Un pedido especial para la cocina sobre esta hamburguesa:
+    # "sin cebolla", "dip de alioli". Sale en la comanda.
+    nota = models.CharField(max_length=200, blank=True)
+
     class Meta:
         verbose_name = "Item del Pedido"
         verbose_name_plural = "Items del Pedido"

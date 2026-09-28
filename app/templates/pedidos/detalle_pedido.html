@@ -6,11 +6,39 @@
 {% block contenido %}
 <a href="{% url 'pedidos:cola_pedidos' %}" class="back-link">&laquo; Volver a la cola</a>
 
+{# El mensaje para la cocina, armado por pedidos/comanda.py. Va primero #}
+{# porque al crear un pedido se llega aca para mandarselo a la cocina.   #}
+<div class="card card-comanda">
+    <h2>Comanda para cocina</h2>
+    <div class="texto-comanda">{{ comanda }}</div>
+    <textarea id="comanda-{{ pedido.pk }}" hidden readonly>{{ comanda }}</textarea>
+
+    <div class="acciones-comanda">
+        {% if link_whatsapp %}
+        <a href="{{ link_whatsapp }}" target="_blank" rel="noopener" class="btn btn-whatsapp">Enviar a cocina por WhatsApp</a>
+        {% endif %}
+        <button type="button" class="btn btn-secondary" data-comanda="comanda-{{ pedido.pk }}"
+                onclick="copiarComanda(this)">Copiar</button>
+        <a href="{% url 'pedidos:crear_pedido' %}" class="btn btn-primary">Cargar otro pedido</a>
+    </div>
+
+    {% if not link_whatsapp %}
+    <p><small>
+        Para enviarla con un clic, carga el WhatsApp de la cocina en
+        <a href="{% url 'config:panel_config' %}">Configuracion</a>.
+    </small></p>
+    {% endif %}
+</div>
+
 <div class="card">
     <h2>Cliente</h2>
     <p><strong>{{ pedido.cliente_nombre }}</strong></p>
+    {% if pedido.retiro_local %}
+    <p>Retira en el local</p>
+    {% else %}
     <p>Telefono: {{ pedido.cliente_telefono }}</p>
-    <p>Direccion: {{ pedido.cliente_direccion }}</p>
+    {% include 'pedidos/_direccion.html' %}
+    {% endif %}
     {% if pedido.observaciones %}
     <p>Observaciones: {{ pedido.observaciones }}</p>
     {% endif %}
@@ -36,7 +64,10 @@
             {% for item in pedido.items.all %}
             <tr>
                 <td>{{ item.cantidad }}</td>
-                <td>{{ item.hamburguesa.nombre }} (${{ item.precio_unitario }} c/u)</td>
+                <td>
+                    {{ item.hamburguesa.nombre }} (${{ item.precio_unitario }} c/u)
+                    {% if item.nota %}<br><span class="item-nota">Nota: {{ item.nota }}</span>{% endif %}
+                </td>
                 <td>
                     {% for adicional in item.adicionales.all %}
                         {{ adicional.adicional.nombre }} (${{ adicional.precio }})<br>
@@ -127,4 +158,6 @@
         </li>
     </ul>
 </div>
+
+<script src="/static/js/comanda.js"></script>
 {% endblock %}

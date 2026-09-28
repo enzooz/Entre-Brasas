@@ -13,6 +13,8 @@ F5 se vuelva a mandar el mismo pedido dos veces.
 
 Las cuentas no estan aca, estan en calculos.py.
 """
+from urllib.parse import quote
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 
@@ -21,24 +23,39 @@ from config.models import Configuracion
 
 from .models import Pedido, ItemPedido, AdicionalDeItem, HistorialEstado
 from .calculos import calcular_envio, calcular_total, descontar_stock, devolver_stock
+from .comanda import armar_comanda
 
 
 def crear_pedido(request):
     """
     Pantalla para cargar un pedido nuevo. Es la pantalla principal del sistema.
+
+    Esta pensada para cargar rapido lo que llega por WhatsApp: si el cliente
+    retira, alcanza con el nombre. Direccion y telefono solo se piden para
+    los envios.
     """
     if request.method == 'POST':
         # El formulario manda "true" o "false" como texto, asi que lo
         # comparamos con el texto "true" para obtener un verdadero/falso.
         retiro_local = request.POST.get('retiro_local') == 'true'
 
-        distancia_km = request.POST.get('distancia_km') or 0
+        error = validar_pedido(request.POST, retiro_local)
+        if error:
+            # El formulario ya controla esto antes de mandar, asi que aca
+            # solo se llega si algo se salteo ese control.
+            messages.error(request, error)
+            return redirect('pedidos:crear_pedido')
+
+        # Si retira, la distancia no importa aunque haya quedado escrita.
+        distancia_km = 0
+        if not retiro_local:
+            distancia_km = request.POST.get('distancia_km') or 0
 
         pedido = Pedido.objects.create(
-            cliente_nombre=request.POST.get('cliente_nombre', ''),
-            cliente_telefono=request.POST.get('cliente_telefono', ''),
-            cliente_direccion=request.POST.get('cliente_direccion', ''),
-            observaciones=request.POST.get('observaciones', ''),
+            cliente_nombre=request.POST.get('cliente_nombre', '').strip(),
+            cliente_telefono=request.POST.get('cliente_telefono', '').strip(),
+            cliente_direccion=request.POST.get('cliente_direccion', '').strip(),
+            observaciones=request.POST.get('observaciones', '').strip(),
             metodo_pago=request.POST.get('metodo_pago', 'efectivo'),
             distancia_km=distancia_km,
             retiro_local=retiro_local,
@@ -52,16 +69,69 @@ def crear_pedido(request):
         pedido.total = calcular_total(pedido)
         pedido.save()
 
-        messages.success(request, f'Pedido #{pedido.pk} creado correctamente')
-        return redirect('pedidos:cola_pedidos')
+        # Vamos al detalle, donde esta la comanda lista para mandar a cocina.
+        messages.success(request, f'Pedido #{pedido.pk} creado. Mandale la comanda a la cocina.')
+        return redirect('pedidos:detalle_pedido', pedido_id=pedido.pk)
 
     # Si es GET mostramos el formulario con los productos disponibles.
     # Solo los activos: los dados de baja no se ofrecen.
+    configuracion = Configuracion.get_config()
+
     return render(request, 'pedidos/crear_pedido.html', {
         'hamburguesas': Hamburguesa.objects.filter(activa=True),
-        'adicionales': Adicional.objects.filter(activo=True),
-        'configuracion': Configuracion.get_config(),
+        # Lo que necesita el JavaScript del formulario. El template lo
+        # pasa con json_script, que lo escribe de forma segura.
+        'datos_formulario': {
+            'adicionales': [
+                datos_de_adicional(adicional)
+                for adicional in Adicional.objects.filter(activo=True, es_medallon_extra=False)
+            ],
+            # El medallon extra va aparte porque tiene su propio selector
+            # Simple / Doble / Triple. Si no hay ninguno marcado, es None.
+            'medallon_extra': datos_de_adicional(
+                Adicional.objects.filter(activo=True, es_medallon_extra=True).first()
+            ),
+            'tarifa_km': configuracion.tarifa_km,
+            'distancia_minima': float(configuracion.distancia_minima),
+            'costo_minimo_envio': configuracion.costo_minimo_envio,
+        },
     })
+
+
+def datos_de_adicional(adicional):
+    """Los datos de un adicional que usa el formulario, como diccionario."""
+    if adicional is None:
+        return None
+
+    return {
+        'id': adicional.pk,
+        'nombre': adicional.nombre,
+        'precio': adicional.precio,
+        # En que hamburguesas se ofrece.
+        'hamburguesas': list(adicional.hamburguesas.values_list('pk', flat=True)),
+    }
+
+
+def validar_pedido(datos, retiro_local):
+    """
+    Revisa que el pedido tenga lo minimo para poder cargarse.
+
+    Devuelve el mensaje de error, o None si esta todo bien.
+    """
+    if not datos.get('cliente_nombre', '').strip():
+        return 'Falta el nombre del cliente.'
+
+    filas = datos.getlist('filas[]')
+    if not any(datos.get(f'hamburguesa_{fila}') for fila in filas):
+        return 'El pedido no tiene ninguna hamburguesa.'
+
+    if not retiro_local:
+        if not datos.get('cliente_direccion', '').strip():
+            return 'Para un envio hace falta la direccion o el link de Maps.'
+        if not datos.get('cliente_telefono', '').strip():
+            return 'Para un envio hace falta el telefono.'
+
+    return None
 
 
 def crear_items_del_pedido(pedido, datos):
@@ -71,53 +141,53 @@ def crear_items_del_pedido(pedido, datos):
     No es una vista: es una funcion de ayuda que usa crear_pedido() para
     no quedar demasiado larga.
 
-    El formulario manda dos listas que van de a pares, porque el usuario
-    puede cargar varias hamburguesas en un mismo pedido:
+    Cada hamburguesa del pedido es una "fila" del formulario, y cada fila
+    tiene un numero. Todos los campos de esa fila llevan su numero en el
+    nombre:
 
-        hamburger_ids[] = ['1', '3', '1']
-        quantities[]    = ['2', '1', '1']
+        filas[]         = ['0', '1']        las filas que hay
+        hamburguesa_0   = '4'               que hamburguesa es
+        cantidad_0      = '1'
+        medallones_0    = '1'               0 simple, 1 doble, 2 triple
+        adicionales_0[] = ['7', '9']        los demas adicionales
+        nota_0          = 'dip de alioli'
 
-    O sea: la primera hamburguesa de la lista va con la primera cantidad,
-    la segunda con la segunda, y asi.
+    Van por numero de fila y no por hamburguesa a proposito: asi dos filas
+    de la misma hamburguesa (una doble y otra simple) no se mezclan.
     """
+    medallon_extra = Adicional.objects.filter(es_medallon_extra=True, activo=True).first()
+
     # getlist() trae TODOS los valores de un campo que se repite.
     # Si usaramos .get() nos traeria solo el ultimo.
-    ids_hamburguesas = datos.getlist('hamburger_ids[]')
-    cantidades = datos.getlist('quantities[]')
+    for fila in datos.getlist('filas[]'):
+        id_hamburguesa = datos.get(f'hamburguesa_{fila}')
 
-    # enumerate nos da la posicion (i) y el valor al mismo tiempo,
-    # asi podemos ir buscando la cantidad que esta en la misma posicion.
-    for i, id_hamburguesa in enumerate(ids_hamburguesas):
-        # Si el usuario dejo una fila sin elegir hamburguesa, la salteamos.
+        # Si quedo una fila sin hamburguesa, la salteamos.
         if not id_hamburguesa:
             continue
 
         hamburguesa = get_object_or_404(Hamburguesa, pk=id_hamburguesa)
 
-        # Por las dudas de que las listas vengan desparejas.
-        if i < len(cantidades):
-            cantidad = int(cantidades[i])
-        else:
-            cantidad = 1
-
         item = ItemPedido.objects.create(
             pedido=pedido,
             hamburguesa=hamburguesa,
-            cantidad=cantidad,
-            precio_unitario=hamburguesa.precio  # se guarda el precio de hoy
+            cantidad=max(1, int(datos.get(f'cantidad_{fila}') or 1)),
+            precio_unitario=hamburguesa.precio,  # se guarda el precio de hoy
+            nota=datos.get(f'nota_{fila}', '').strip(),
         )
 
-        # Los adicionales de cada hamburguesa vienen en un campo que lleva
-        # el numero de la hamburguesa en el nombre. Por ejemplo, los
-        # adicionales de la hamburguesa 3 vienen en "adicionales_3[]".
-        nombre_del_campo = f'adicionales_{id_hamburguesa}[]'
+        # Doble = un medallon extra, triple = dos. Cada uno es una linea
+        # de adicional, asi se cobra y se descuenta del stock como cualquier otro.
+        adicionales = []
+        if medallon_extra:
+            medallones = int(datos.get(f'medallones_{fila}') or 0)
+            adicionales = adicionales + [medallon_extra] * medallones
 
-        for id_adicional in datos.getlist(nombre_del_campo):
-            if not id_adicional:
-                continue
+        for id_adicional in datos.getlist(f'adicionales_{fila}[]'):
+            if id_adicional:
+                adicionales.append(get_object_or_404(Adicional, pk=id_adicional))
 
-            adicional = get_object_or_404(Adicional, pk=id_adicional)
-
+        for adicional in adicionales:
             AdicionalDeItem.objects.create(
                 item=item,
                 adicional=adicional,
@@ -144,6 +214,13 @@ def cola_pedidos(request):
 
     if estado:
         pedidos = pedidos.filter(estado=estado)
+
+    # Cada tarjeta tiene un boton para volver a copiar la comanda, por si
+    # hay que reenviarsela a la cocina. list() arma la lista una sola vez,
+    # asi el texto que le agregamos a cada pedido llega al template.
+    pedidos = list(pedidos)
+    for pedido in pedidos:
+        pedido.comanda = armar_comanda(pedido)
 
     return render(request, 'pedidos/cola_pedidos.html', {
         'pedidos': pedidos,
@@ -175,10 +252,22 @@ def detalle_pedido(request, pedido_id):
         for adicional in item.adicionales.all():
             total_adicionales = total_adicionales + (adicional.precio * item.cantidad)
 
+    comanda = armar_comanda(pedido)
+
+    # Si esta cargado el WhatsApp de la cocina, armamos el link que abre
+    # WhatsApp con la comanda ya escrita. quote() convierte el texto al
+    # formato de las direcciones web (los espacios pasan a %20, etc.).
+    link_whatsapp = ''
+    numero_cocina = Configuracion.get_config().whatsapp_cocina
+    if numero_cocina:
+        link_whatsapp = f'https://wa.me/{numero_cocina}?text={quote(comanda)}'
+
     return render(request, 'pedidos/detalle_pedido.html', {
         'pedido': pedido,
         'total_hamburguesas': total_hamburguesas,
         'total_adicionales': total_adicionales,
+        'comanda': comanda,
+        'link_whatsapp': link_whatsapp,
     })
 
 

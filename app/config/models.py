@@ -26,6 +26,11 @@ class Configuracion(models.Model):
     # Se usa para calcular cuanto cuesta preparar cada hamburguesa.
     costo_hora_mano_obra = models.PositiveIntegerField(default=2500)
 
+    # El numero de WhatsApp del celular de la cocina, con codigo de pais y
+    # sin espacios (por ejemplo 5493624000000). Si esta cargado, el detalle
+    # del pedido muestra un boton que abre WhatsApp con la comanda ya escrita.
+    whatsapp_cocina = models.CharField(max_length=30, blank=True)
+
     class Meta:
         verbose_name = "Configuracion"
         verbose_name_plural = "Configuraciones"

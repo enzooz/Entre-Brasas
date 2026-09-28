@@ -1,6 +1,6 @@
 # PLAN DE MEJORAS PENDIENTES — ENTRE BRASAS
 
-**Última actualización:** 25/09/2026
+**Última actualización:** 27/09/2026
 **Origen:** revisión de UX de las pestañas Nuevo Pedido, Cola, Historial, Inventario y
 Recetas (lista "PESTAÑA NUEVO PEDIDO"), cruzada contra el código actual.
 
@@ -15,7 +15,8 @@ Recetas (lista "PESTAÑA NUEVO PEDIDO"), cruzada contra el código actual.
 | Pestaña | Pedido | Estado |
 |---|---|---|
 | Nuevo pedido | Agregar más de un producto | ✅ Hecho |
-| Nuevo pedido | Adicionales por cada producto | ✅ Hecho (ver bug B-1) |
+| Nuevo pedido | Adicionales por cada producto | ✅ Hecho (bug B-1 resuelto el 27/09) |
+| Nuevo pedido | Carga rápida + comanda para cocina por WhatsApp | ✅ Hecho (27/09) |
 | Nuevo pedido | Ocultar "Distancia" si retira en el local | ✅ Hecho |
 | Nuevo pedido | Mostrar el total antes de confirmar | ✅ Hecho |
 | Nuevo pedido | Guardar lo escrito con localStorage | ⏳ Pendiente — Tanda 1 |
@@ -87,30 +88,20 @@ Hoy hay 0 recetas de adicionales cargadas, por eso parece que no sirve.
 
 ## BUGS CONOCIDOS
 
-### B-1 — Dos filas con la misma hamburguesa mezclan los adicionales
+### B-1 — Dos filas con la misma hamburguesa mezclan los adicionales ✅ Resuelto
 
-**Archivos:** `app/templates/pedidos/crear_pedido.html` y
-`app/pedidos/views.py` → `crear_items_del_pedido()`
-
-El campo de adicionales se nombra con el id de la hamburguesa
-(`adicionales_3[]`), no con la fila. Si se cargan dos filas de la misma
-hamburguesa (por ejemplo, 1 con bacon y 2 sin), la vista le da a las dos filas
-los adicionales de ambas.
-
-Es justo el caso de "adicionales según la cantidad de cada producto", así que
-hay que arreglarlo antes de dar ese pedido por cerrado.
-
-**Fix:** nombrar el campo con el número de fila (`adicionales_fila_0[]`) y
-leerlo por posición en la vista.
+Los campos del formulario se nombraban con el id de la hamburguesa
+(`adicionales_3[]`), así que dos filas de la misma hamburguesa compartían los
+adicionales. Desde el 27/09/2026 todos los campos van por número de fila
+(`hamburguesa_0`, `adicionales_0[]`, etc.). Ver `crear_items_del_pedido()`.
 
 ---
 
 ## TANDA 1 — Cambios chicos
 
-1. **Bug B-1** (ver arriba).
-2. **localStorage en Nuevo pedido:** guardar lo escrito para que no se pierda al
+1. **localStorage en Nuevo pedido:** guardar lo escrito para que no se pierda al
    recargar, y limpiarlo cuando el pedido se crea bien.
-3. **Regla de ingredientes:** aplicar la decisión #1.
+2. **Regla de ingredientes:** aplicar la decisión #1.
 
 ## TANDA 2 — Seguir aunque falte stock
 
@@ -135,6 +126,29 @@ Hoy `Pedido` guarda los datos del cliente como texto suelto (`cliente_nombre`,
    la opción "cliente nuevo".
 
 ---
+
+## HECHO EL 27/09/2026 — Carga rápida y comanda para cocina
+
+En el local los pedidos llegan por WhatsApp y el que está en la PC se los
+reenvía a la cocina con un WhatsApp escrito a mano. Ahora el pedido se carga
+una sola vez y el sistema arma ese mensaje solo.
+
+- **Nuevo pedido más rápido:** un botón por hamburguesa, cantidad con − / +,
+  selector Simple / Doble / Triple (el doble es el adicional marcado como
+  "medallón extra"), adicionales como etiquetas y una nota por hamburguesa
+  ("dip de alioli"). Si retira, alcanza con el nombre; dirección (o link de
+  Maps), teléfono y km se piden solo para envío.
+- **Comanda** (`app/pedidos/comanda.py`): el texto con el mismo formato que
+  usaba el local ("1 Crispy doble", "RETIRA", y para los envíos dirección,
+  teléfono, pago y total).
+- **Enviar a cocina:** al crear el pedido se abre el detalle con la comanda y
+  los botones "Enviar a cocina por WhatsApp" (si se cargó el número en
+  Configuración) y "Copiar". La cola tiene "Copiar comanda" en cada tarjeta.
+- **Datos nuevos:** `ItemPedido.nota`, `Adicional.es_medallon_extra` y
+  `Configuracion.whatsapp_cocina` (migraciones `pedidos/0003`, `menu/0002`,
+  `config/0002`).
+- **Pendiente para más adelante:** pegar el mensaje del cliente y que el
+  formulario se complete solo.
 
 ## HECHO EN ESTA RONDA (25/09/2026)
 

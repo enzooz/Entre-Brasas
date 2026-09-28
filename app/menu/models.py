@@ -60,6 +60,14 @@ class Adicional(models.Model):
 
     activo = models.BooleanField(default=True)
 
+    # Marca el adicional que convierte una hamburguesa en "doble" o "triple"
+    # (el Medallon extra). Con esto el formulario de pedidos muestra el
+    # selector Simple / Doble / Triple y la comanda escribe "Crispy doble".
+    es_medallon_extra = models.BooleanField(
+        default=False,
+        verbose_name='Es el medallon extra (doble / triple)'
+    )
+
     class Meta:
         ordering = ['nombre']
         verbose_name = "Adicional"

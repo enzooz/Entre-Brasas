@@ -33,18 +33,23 @@
         {{ pedido.fecha_creacion|date:"d/m/Y H:i" }}
     </p>
 
-    <p>{{ pedido.cliente_direccion }} - Tel: {{ pedido.cliente_telefono }}</p>
+    {% if pedido.retiro_local %}
+    <p>Retira en el local</p>
+    {% else %}
+    {% include 'pedidos/_direccion.html' %}
+    <p>Tel: {{ pedido.cliente_telefono }}</p>
+    {% endif %}
 
-    <ul>
-        {% for item in pedido.items.all %}
-        <li>{{ item.cantidad }}x {{ item.hamburguesa.nombre }}</li>
-        {% endfor %}
-    </ul>
+    {# La comanda muestra lo mismo que le llega a la cocina: "1 Crispy doble", notas, etc. #}
+    <div class="texto-comanda">{{ pedido.comanda }}</div>
+    <textarea id="comanda-{{ pedido.pk }}" hidden readonly>{{ pedido.comanda }}</textarea>
 
     <p class="total-highlight">Total: ${{ pedido.total }}</p>
 
     <div class="order-actions">
         <a href="{% url 'pedidos:detalle_pedido' pedido.pk %}" class="btn btn-secondary">Ver detalle</a>
+        <button type="button" class="btn btn-secondary" data-comanda="comanda-{{ pedido.pk }}"
+                onclick="copiarComanda(this)">Copiar comanda</button>
 
         {# Avanzar cambia datos, asi que va por POST y no por link. #}
         {# El boton toma el color del estado al que pasa el pedido. #}
@@ -64,4 +69,5 @@
 </div>
 {% endfor %}
 
+<script src="/static/js/comanda.js"></script>
 {% endblock %}

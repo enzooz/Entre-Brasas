@@ -4,91 +4,95 @@
 {% block encabezado %}Nuevo pedido{% endblock %}
 
 {% block contenido %}
-<form method="POST">
+{# Pensado para cargar rapido lo que llega por WhatsApp:                  #}
+{#   nombre -> tocar las hamburguesas -> retira o envio -> crear.          #}
+{# Si retira, alcanza con el nombre. Al crear, el sistema arma la comanda. #}
+<form method="POST" id="formPedido">
     {% csrf_token %}
 
     <div class="card">
-        <h2>Datos del cliente</h2>
+        <h2>Cliente</h2>
         <p>
-            <label>Nombre *</label>
-            <input type="text" name="cliente_nombre" class="form-control" required>
+            <label for="clienteNombre">Nombre *</label>
+            <input type="text" name="cliente_nombre" id="clienteNombre" class="form-control"
+                   required autofocus autocomplete="off">
         </p>
         <p>
-            <label>Telefono *</label>
-            <input type="text" name="cliente_telefono" class="form-control" required>
-        </p>
-        <p>
-            <label>Direccion *</label>
-            <input type="text" name="cliente_direccion" class="form-control" required>
-        </p>
-        <p>
-            <label>Observaciones</label>
-            <input type="text" name="observaciones" class="form-control"
-                   placeholder="Por ejemplo: sin cebolla">
+            <label for="observaciones">Observaciones del pedido</label>
+            <input type="text" name="observaciones" id="observaciones" class="form-control"
+                   placeholder="Algo que valga para todo el pedido" autocomplete="off">
         </p>
     </div>
 
     <div class="card">
-        <h2>Productos</h2>
+        <h2>Hamburguesas</h2>
 
-        {# Aca adentro va una fila por cada hamburguesa del pedido. #}
-        {# El boton de abajo copia esta fila para agregar mas productos. #}
-        <div id="listaProductos">
-            <div class="producto-item">
-                <p>
-                    <label>Hamburguesa *</label>
-                    <select name="hamburger_ids[]" class="form-control selector-hamburguesa"
-                            required onchange="mostrarAdicionales(this)">
-                        <option value="">Elegir hamburguesa...</option>
-                        {% for hamburguesa in hamburguesas %}
-                        <option value="{{ hamburguesa.pk }}" data-precio="{{ hamburguesa.precio }}">
-                            {{ hamburguesa.nombre }} - ${{ hamburguesa.precio }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </p>
-                <p>
-                    <label>Cantidad *</label>
-                    <input type="number" name="quantities[]" class="form-control cantidad"
-                           value="1" min="1" required onchange="calcularTotal()">
-                </p>
-                <div class="addons-container">
-                    <label>Adicionales:</label>
-                </div>
-            </div>
+        {# Un boton por hamburguesa. Cada clic agrega una fila abajo. #}
+        <div class="menu-botones">
+            {% for hamburguesa in hamburguesas %}
+            <button type="button" class="boton-menu"
+                    data-id="{{ hamburguesa.pk }}"
+                    data-nombre="{{ hamburguesa.nombre }}"
+                    data-precio="{{ hamburguesa.precio }}"
+                    onclick="agregarHamburguesa(this)">
+                <span class="boton-menu-nombre">{{ hamburguesa.nombre }}</span>
+                <span class="boton-menu-precio">${{ hamburguesa.precio }}</span>
+            </button>
+            {% empty %}
+            <p>No hay hamburguesas activas. Cargalas en la seccion Hamburguesas.</p>
+            {% endfor %}
         </div>
 
-        <button type="button" class="btn btn-secondary" onclick="agregarProducto()">
-            + Agregar otra hamburguesa
-        </button>
+        <div id="listaProductos"></div>
+        <p id="sinProductos" class="sin-productos">Toca una hamburguesa para agregarla al pedido.</p>
     </div>
 
     <div class="card">
-        <h2>Envio</h2>
-        <p>
-            <label>Retira en el local?</label>
-            <select name="retiro_local" id="retiroLocal" class="form-control" onchange="calcularTotal()">
-                <option value="false">No, con envio a domicilio</option>
-                <option value="true">Si, retira en el local</option>
-            </select>
-        </p>
-        <p id="filaDistancia">
-            <label>Distancia (km)</label>
-            <input type="number" name="distancia_km" id="distancia" class="form-control"
-                   value="0" min="0" step="0.1" onchange="calcularTotal()">
-        </p>
+        <h2>Entrega *</h2>
+        <div class="selector-opciones selector-grande">
+            <label class="opcion">
+                <input type="radio" name="retiro_local" value="true" required onchange="cambiarEntrega()">
+                <span>Retira en el local</span>
+            </label>
+            <label class="opcion">
+                <input type="radio" name="retiro_local" value="false" onchange="cambiarEntrega()">
+                <span>Envio a domicilio</span>
+            </label>
+        </div>
+
+        {# Solo se muestra si es envio. #}
+        <div id="datosEnvio" hidden>
+            <p>
+                <label for="clienteDireccion">Direccion o link de Google Maps *</label>
+                <input type="text" name="cliente_direccion" id="clienteDireccion" class="form-control"
+                       autocomplete="off" oninput="mostrarLinkMaps()">
+                <a id="linkMaps" href="#" target="_blank" rel="noopener" hidden>Abrir en Google Maps para ver la distancia</a>
+            </p>
+            <p>
+                <label for="clienteTelefono">Telefono *</label>
+                <input type="text" name="cliente_telefono" id="clienteTelefono" class="form-control"
+                       autocomplete="off">
+            </p>
+            <p>
+                <label for="distancia">Distancia (km) *</label>
+                <input type="number" name="distancia_km" id="distancia" class="form-control"
+                       min="0" step="0.1" oninput="calcularTotal()">
+            </p>
+        </div>
     </div>
 
     <div class="card">
-        <h2>Metodo de pago *</h2>
-        <p>
-            <input type="radio" name="metodo_pago" value="efectivo" id="pagoEfectivo" required>
-            <label for="pagoEfectivo">Efectivo</label>
-        </p>
-        <p>
-            <input type="radio" name="metodo_pago" value="transferencia" id="pagoTransferencia">
-            <label for="pagoTransferencia">Transferencia o QR</label>
-        </p>
+        <h2>Pago</h2>
+        <div class="selector-opciones">
+            <label class="opcion">
+                <input type="radio" name="metodo_pago" value="efectivo" checked>
+                <span>Efectivo</span>
+            </label>
+            <label class="opcion">
+                <input type="radio" name="metodo_pago" value="transferencia">
+                <span>Transferencia o QR</span>
+            </label>
+        </div>
     </div>
 
     <div class="card">
@@ -108,115 +112,204 @@
     </div>
 </form>
 
-{# ------------------------------------------------------------------ #}
-{# Este es el unico JavaScript del sistema. Sirve para dos cosas:      #}
-{#   1. mostrar los adicionales que corresponden a cada hamburguesa    #}
-{#   2. ir mostrando el total mientras se carga el pedido              #}
-{# La cuenta que vale es la que hace Python al guardar; esta es solo   #}
-{# para que el que toma el pedido vea el total sin esperar.            #}
-{# ------------------------------------------------------------------ #}
+{# La fila que se copia cada vez que se toca una hamburguesa. Las "N" se #}
+{# reemplazan por el numero de fila, asi cada fila tiene sus propios campos. #}
+<template id="plantillaFila">
+    <div class="fila-producto">
+        <input type="hidden" name="filas[]" value="N">
+        <input type="hidden" name="hamburguesa_N" class="campo-hamburguesa">
+
+        <div class="fila-encabezado">
+            <strong class="fila-nombre"></strong>
+            <div class="contador">
+                <button type="button" class="boton-contador" onclick="cambiarCantidad(this, -1)" aria-label="Una menos">&minus;</button>
+                <input type="number" name="cantidad_N" class="cantidad" value="1" min="1" oninput="calcularTotal()" aria-label="Cantidad">
+                <button type="button" class="boton-contador" onclick="cambiarCantidad(this, 1)" aria-label="Una mas">+</button>
+            </div>
+            <button type="button" class="boton-quitar" onclick="quitarFila(this)">Quitar</button>
+        </div>
+
+        <div class="selector-opciones selector-medallones" hidden>
+            <label class="opcion"><input type="radio" name="medallones_N" value="0" checked onchange="calcularTotal()"><span>Simple</span></label>
+            <label class="opcion"><input type="radio" name="medallones_N" value="1" onchange="calcularTotal()"><span>Doble</span></label>
+            <label class="opcion"><input type="radio" name="medallones_N" value="2" onchange="calcularTotal()"><span>Triple</span></label>
+        </div>
+
+        <div class="chips-adicionales"></div>
+
+        <input type="text" name="nota_N" class="form-control campo-nota"
+               placeholder="Nota para cocina (ej: dip de alioli, sin cebolla)" autocomplete="off">
+    </div>
+</template>
+
+{{ datos_formulario|json_script:"datosFormulario" }}
+
 <script>
-// Los adicionales que cargamos desde Django, con las hamburguesas
-// en las que esta disponible cada uno.
-var ADICIONALES = [
-    {% for adicional in adicionales %}
-    {
-        id: {{ adicional.pk }},
-        nombre: "{{ adicional.nombre }}",
-        precio: {{ adicional.precio }},
-        hamburguesas: [{% for h in adicional.hamburguesas.all %}{{ h.pk }}{% if not forloop.last %}, {% endif %}{% endfor %}]
-    }{% if not forloop.last %},{% endif %}
-    {% endfor %}
-];
+// Lo que armo la vista: adicionales, medallon extra y tarifas de envio.
+var DATOS = JSON.parse(document.getElementById('datosFormulario').textContent);
 
-// Los valores de envio que configuro el duenio del local.
-var TARIFA_KM = {{ configuracion.tarifa_km }};
-var DISTANCIA_MINIMA = {{ configuracion.distancia_minima }};
-var COSTO_MINIMO_ENVIO = {{ configuracion.costo_minimo_envio }};
+// Cada fila nueva recibe el numero siguiente. No se reutilizan aunque se
+// quite una fila: asi nunca hay dos filas con los mismos nombres de campo.
+var proximaFila = 0;
 
 
-// Cuando se elige una hamburguesa, mostramos sus adicionales.
-function mostrarAdicionales(selector) {
-    var idHamburguesa = parseInt(selector.value);
-    var fila = selector.closest('.producto-item');
-    var caja = fila.querySelector('.addons-container');
+// Agrega una hamburguesa al pedido. Si ya hay una fila de esa hamburguesa
+// que no se toco (simple, sin adicionales ni nota), le suma 1 en vez de
+// agregar otra fila. Si se toco, agrega una fila nueva: asi "1 crispy
+// doble + 1 crispy simple" quedan separadas.
+function agregarHamburguesa(boton) {
+    var id = parseInt(boton.dataset.id);
 
-    // Limpiamos lo que hubiera de la hamburguesa anterior.
-    caja.innerHTML = '<label>Adicionales:</label>';
-
-    if (!idHamburguesa) {
-        calcularTotal();
-        return;
+    var filas = document.querySelectorAll('.fila-producto');
+    for (var i = 0; i < filas.length; i++) {
+        if (parseInt(filas[i].dataset.hamburguesa) === id && filaSinCambios(filas[i])) {
+            var cantidad = filas[i].querySelector('.cantidad');
+            cantidad.value = parseInt(cantidad.value) + 1;
+            calcularTotal();
+            return;
+        }
     }
 
-    for (var i = 0; i < ADICIONALES.length; i++) {
-        var adicional = ADICIONALES[i];
+    crearFila(id, boton.dataset.nombre, parseInt(boton.dataset.precio));
+}
 
-        // indexOf devuelve -1 si el numero no esta en la lista.
-        if (adicional.hamburguesas.indexOf(idHamburguesa) === -1) {
+
+function filaSinCambios(fila) {
+    var medallones = fila.querySelector('.selector-medallones input:checked');
+    var adicionalesMarcados = fila.querySelectorAll('.chips-adicionales input:checked');
+    var nota = fila.querySelector('.campo-nota').value.trim();
+
+    return (!medallones || medallones.value === '0') && adicionalesMarcados.length === 0 && nota === '';
+}
+
+
+function crearFila(id, nombre, precio) {
+    var numero = proximaFila;
+    proximaFila = proximaFila + 1;
+
+    // Copiamos la plantilla y le ponemos el numero de fila a los campos.
+    var html = document.getElementById('plantillaFila').innerHTML.replace(/_N\b/g, '_' + numero).replace('value="N"', 'value="' + numero + '"');
+    var contenedor = document.createElement('div');
+    contenedor.innerHTML = html.trim();
+    var fila = contenedor.firstChild;
+
+    fila.dataset.hamburguesa = id;
+    fila.dataset.precio = precio;
+    fila.querySelector('.campo-hamburguesa').value = id;
+    fila.querySelector('.fila-nombre').textContent = nombre + ' ($' + precio + ')';
+
+    // El selector Simple / Doble / Triple, si esta hamburguesa admite medallon extra.
+    var medallon = DATOS.medallon_extra;
+    if (medallon && medallon.hamburguesas.indexOf(id) !== -1) {
+        fila.querySelector('.selector-medallones').hidden = false;
+    }
+
+    // Una casilla por cada adicional que se ofrece en esta hamburguesa.
+    var chips = fila.querySelector('.chips-adicionales');
+    for (var i = 0; i < DATOS.adicionales.length; i++) {
+        var adicional = DATOS.adicionales[i];
+
+        if (adicional.hamburguesas.indexOf(id) === -1) {
             continue;
         }
 
         var etiqueta = document.createElement('label');
-        var casilla = document.createElement('input');
+        etiqueta.className = 'chip';
 
+        var casilla = document.createElement('input');
         casilla.type = 'checkbox';
-        // El nombre del campo lleva el numero de la hamburguesa, asi Python
-        // sabe a cual de las hamburguesas del pedido corresponde el adicional.
-        casilla.name = 'adicionales_' + idHamburguesa + '[]';
+        casilla.name = 'adicionales_' + numero + '[]';
         casilla.value = adicional.id;
-        casilla.className = 'casilla-adicional';
         casilla.dataset.precio = adicional.precio;
         casilla.onchange = calcularTotal;
 
+        var texto = document.createElement('span');
+        texto.textContent = '+ ' + adicional.nombre + ' $' + adicional.precio;
+
         etiqueta.appendChild(casilla);
-        etiqueta.appendChild(document.createTextNode(' ' + adicional.nombre + ' ($' + adicional.precio + ')'));
-        caja.appendChild(etiqueta);
+        etiqueta.appendChild(texto);
+        chips.appendChild(etiqueta);
     }
+
+    document.getElementById('listaProductos').appendChild(fila);
+    calcularTotal();
+}
+
+
+function cambiarCantidad(boton, cambio) {
+    var campo = boton.parentNode.querySelector('.cantidad');
+    campo.value = Math.max(1, (parseInt(campo.value) || 1) + cambio);
+    calcularTotal();
+}
+
+
+function quitarFila(boton) {
+    boton.closest('.fila-producto').remove();
+    calcularTotal();
+}
+
+
+// Retira o envio: los datos de envio solo se muestran (y se piden) si es envio.
+function cambiarEntrega() {
+    var elegido = document.querySelector('input[name="retiro_local"]:checked');
+    var esEnvio = elegido && elegido.value === 'false';
+
+    document.getElementById('datosEnvio').hidden = !esEnvio;
+    document.getElementById('clienteDireccion').required = esEnvio;
+    document.getElementById('clienteTelefono').required = esEnvio;
+    document.getElementById('distancia').required = esEnvio;
 
     calcularTotal();
 }
 
 
-// Recalcula los totales que se muestran en el resumen.
+// Si pegan un link de Maps en la direccion, aparece un acceso para abrirlo.
+function mostrarLinkMaps() {
+    var texto = document.getElementById('clienteDireccion').value.trim();
+    var link = document.getElementById('linkMaps');
+    var esLink = texto.indexOf('http') === 0;
+
+    link.hidden = !esLink;
+    link.href = esLink ? texto : '#';
+}
+
+
+// Recalcula los totales que se muestran en el resumen. La cuenta que vale
+// es la que hace Python al guardar; esta es para ver el total al cargar.
 function calcularTotal() {
     var totalHamburguesas = 0;
     var totalAdicionales = 0;
-
-    var filas = document.querySelectorAll('.producto-item');
+    var filas = document.querySelectorAll('.fila-producto');
 
     for (var i = 0; i < filas.length; i++) {
         var fila = filas[i];
-        var selector = fila.querySelector('.selector-hamburguesa');
         var cantidad = parseInt(fila.querySelector('.cantidad').value) || 0;
 
-        if (selector.selectedIndex > 0) {
-            var precio = parseInt(selector.options[selector.selectedIndex].dataset.precio) || 0;
-            totalHamburguesas = totalHamburguesas + (precio * cantidad);
+        totalHamburguesas = totalHamburguesas + parseInt(fila.dataset.precio) * cantidad;
+
+        // Los adicionales se cobran por cada hamburguesa de la fila.
+        var medallones = fila.querySelector('.selector-medallones input:checked');
+        if (DATOS.medallon_extra && medallones) {
+            totalAdicionales = totalAdicionales + parseInt(medallones.value) * DATOS.medallon_extra.precio * cantidad;
         }
 
-        var marcados = fila.querySelectorAll('.casilla-adicional:checked');
+        var marcados = fila.querySelectorAll('.chips-adicionales input:checked');
         for (var j = 0; j < marcados.length; j++) {
-            totalAdicionales = totalAdicionales + (parseInt(marcados[j].dataset.precio) * cantidad);
+            totalAdicionales = totalAdicionales + parseInt(marcados[j].dataset.precio) * cantidad;
         }
     }
 
+    document.getElementById('sinProductos').hidden = filas.length > 0;
+
     // El envio se calcula con las mismas reglas que usa Python en calculos.py.
-    var retiraEnLocal = document.getElementById('retiroLocal').value === 'true';
+    var elegido = document.querySelector('input[name="retiro_local"]:checked');
     var costoEnvio = 0;
 
-    // Si retira en el local escondemos el campo de la distancia.
-    document.getElementById('filaDistancia').style.display = retiraEnLocal ? 'none' : 'block';
-
-    if (!retiraEnLocal) {
+    if (elegido && elegido.value === 'false') {
         var distancia = parseFloat(document.getElementById('distancia').value) || 0;
 
-        if (distancia >= DISTANCIA_MINIMA) {
-            costoEnvio = distancia * TARIFA_KM;
-
-            if (costoEnvio < COSTO_MINIMO_ENVIO) {
-                costoEnvio = COSTO_MINIMO_ENVIO;
-            }
+        if (distancia >= DATOS.distancia_minima) {
+            costoEnvio = Math.max(distancia * DATOS.tarifa_km, DATOS.costo_minimo_envio);
         }
     }
 
@@ -229,27 +322,21 @@ function calcularTotal() {
 }
 
 
-// Agrega otra fila de producto, copiando la primera.
-function agregarProducto() {
-    var lista = document.getElementById('listaProductos');
-    var copia = lista.querySelector('.producto-item').cloneNode(true);
+var formulario = document.getElementById('formPedido');
 
-    // La copia viene con lo que tenia la original, asi que la limpiamos.
-    copia.querySelector('.selector-hamburguesa').selectedIndex = 0;
-    copia.querySelector('.cantidad').value = 1;
-    copia.querySelector('.addons-container').innerHTML = '<label>Adicionales:</label>';
+// Que un Enter en un campo de texto no mande el pedido sin querer.
+formulario.addEventListener('keydown', function (evento) {
+    if (evento.key === 'Enter' && evento.target.tagName === 'INPUT') {
+        evento.preventDefault();
+    }
+});
 
-    var botonQuitar = document.createElement('button');
-    botonQuitar.type = 'button';
-    botonQuitar.className = 'btn btn-danger';
-    botonQuitar.textContent = 'Quitar';
-    botonQuitar.onclick = function () {
-        copia.remove();
-        calcularTotal();
-    };
-
-    copia.appendChild(botonQuitar);
-    lista.appendChild(copia);
-}
+// Sin hamburguesas no hay pedido.
+formulario.addEventListener('submit', function (evento) {
+    if (document.querySelectorAll('.fila-producto').length === 0) {
+        evento.preventDefault();
+        alert('Agrega al menos una hamburguesa al pedido.');
+    }
+});
 </script>
 {% endblock %}
