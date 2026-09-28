@@ -7,9 +7,11 @@
 <a href="{% url 'inventario:ver_inventario' %}" class="back-link">&laquo; Volver al inventario</a>
 
 <div class="alerta alerta-info">
-    Usa <strong>entrada</strong> cuando llega una compra y
-    <strong>salida</strong> cuando se pierde o se usa algo fuera de un pedido.
-    El descuento por los pedidos lo hace el sistema solo.
+    Usa <strong>entrada</strong> cuando llega una compra,
+    <strong>salida</strong> cuando se pierde o se usa algo fuera de un pedido, y
+    <strong>conteo</strong> cuando contaste lo que hay de verdad: escribis ese
+    numero y el sistema ajusta el stock solo. El descuento por los pedidos lo
+    hace el sistema.
 </div>
 
 {% if form.errors %}
@@ -30,35 +32,51 @@
 </form>
 
 <script>
-// La unidad de cada ingrediente, cargada desde Django: { id: "kg", ... }
-var UNIDADES = {
+// La unidad y el stock de cada ingrediente, cargados desde Django:
+// { id: {unidad: "kg", stock: "2.50"}, ... }
+var INGREDIENTES = {
     {% for ingrediente in ingredientes %}
-    "{{ ingrediente.pk }}": "{{ ingrediente.unidad }}",
+    "{{ ingrediente.pk }}": { unidad: "{{ ingrediente.unidad }}", stock: "{{ ingrediente.stock_actual }}" },
     {% endfor %}
 };
 
 var selectorIngrediente = document.getElementById('id_ingrediente');
+var selectorTipo = document.getElementById('id_tipo');
 var etiquetaCantidad = document.querySelector('label[for="id_cantidad"]');
 var etiquetaPrecio = document.querySelector('label[for="id_precio_unitario"]');
+var etiquetaMotivo = document.querySelector('label[for="id_motivo"]');
+var filaPrecio = document.getElementById('id_precio_unitario').closest('p');
 
-// Cuando se elige un ingrediente, las etiquetas pasan a decir en que
-// unidad va la cantidad y a que unidad corresponde el precio.
+// Cuando se elige un ingrediente o un tipo, las etiquetas pasan a decir en
+// que unidad va la cantidad. En un conteo, ademas, se muestra cuanto dice
+// el sistema que hay y se esconde el precio (no es una compra).
 function mostrarUnidad() {
-    var unidad = UNIDADES[selectorIngrediente.value];
+    var ingrediente = INGREDIENTES[selectorIngrediente.value];
+    var esConteo = selectorTipo.value === 'conteo';
 
-    if (unidad) {
-        // "Cantidad (en unidades)" esta bien, pero el precio es "por unidad".
-        var unidadPrecio = unidad === 'unidades' ? 'unidad' : unidad;
+    filaPrecio.hidden = esConteo;
+    etiquetaMotivo.textContent = esConteo ? 'Motivo (opcional):' : 'Motivo:';
 
-        etiquetaCantidad.textContent = 'Cantidad (en ' + unidad + '):';
-        etiquetaPrecio.textContent = 'Precio unitario ($ por ' + unidadPrecio + '):';
-    } else {
-        etiquetaCantidad.textContent = 'Cantidad:';
+    if (!ingrediente) {
+        etiquetaCantidad.textContent = esConteo ? 'Cantidad contada:' : 'Cantidad:';
         etiquetaPrecio.textContent = 'Precio unitario:';
+        return;
     }
+
+    var unidad = ingrediente.unidad;
+    // "Cantidad (en unidades)" esta bien, pero el precio es "por unidad".
+    var unidadPrecio = unidad === 'unidades' ? 'unidad' : unidad;
+
+    if (esConteo) {
+        etiquetaCantidad.textContent = 'Cantidad contada (en ' + unidad + '). El sistema dice que hay ' + ingrediente.stock + ':';
+    } else {
+        etiquetaCantidad.textContent = 'Cantidad (en ' + unidad + '):';
+    }
+    etiquetaPrecio.textContent = 'Precio unitario ($ por ' + unidadPrecio + '):';
 }
 
 selectorIngrediente.addEventListener('change', mostrarUnidad);
+selectorTipo.addEventListener('change', mostrarUnidad);
 
 // Tambien al cargar la pagina, por si vuelve con un ingrediente ya elegido
 // (cuando el formulario tenia errores).

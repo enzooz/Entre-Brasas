@@ -103,36 +103,28 @@ def descontar_stock(pedido):
     Se hace cuando el pedido pasa a "En preparacion", que es cuando la cocina
     lo empieza a preparar de verdad y gasta los insumos.
 
-    El trabajo se hace en DOS VUELTAS a proposito:
-      1ra vuelta: revisa que alcance el stock de TODOS los ingredientes.
-      2da vuelta: recien ahi descuenta.
-    Si revisara y descontara en la misma vuelta, un pedido podria quedar
-    descontado a medias cuando falta el ultimo ingrediente.
+    NUNCA frena el pedido por falta de stock. Si la hamburguesa se esta
+    haciendo, los ingredientes estan en la cocina aunque el sistema no lo
+    sepa (por ejemplo, porque todavia no se cargo el stock real). Frenar el
+    pedido no ayuda a nadie; lo que sirve es avisar que los numeros del
+    inventario no cierran. Por eso el stock puede quedar en negativo: es la
+    senial de que hay que hacer un conteo (Registrar movimiento -> Conteo).
 
     El @transaction.atomic de arriba envuelve todo en una transaccion:
     si algo falla en el medio, la base de datos vuelve para atras y queda
     como si nunca hubiera pasado nada. No queremos descontar medio pedido.
 
-    Si falta stock levanta un ValueError, que la vista atrapa y muestra
-    como mensaje de error en pantalla.
+    Devuelve la lista de ingredientes que RECIEN pasaron a negativo con este
+    pedido, para que la vista pueda avisar. Los que ya estaban en negativo
+    no se repiten: si no, mientras el local no cuente, cada pedido mostraria
+    el mismo aviso largo. (Inventario igual los muestra en rojo.)
+    Si no paso nada de eso, la lista viene vacia.
     """
+    quedaron_en_negativo = []
 
-    # --- Primera vuelta: solo revisar ---
     for item in pedido.items.all():
         for receta in buscar_recetas_del_item(item):
             # Si la receta lleva 0.20 kg y el cliente pidio 3, hacen falta 0.60 kg.
-            cantidad_necesaria = receta.cantidad_requerida * item.cantidad
-
-            if receta.ingrediente.stock_actual < cantidad_necesaria:
-                raise ValueError(
-                    f'Stock insuficiente de {receta.ingrediente.nombre}. '
-                    f'Se necesitan {cantidad_necesaria} {receta.ingrediente.unidad} '
-                    f'y hay {receta.ingrediente.stock_actual} {receta.ingrediente.unidad}.'
-                )
-
-    # --- Segunda vuelta: descontar ---
-    for item in pedido.items.all():
-        for receta in buscar_recetas_del_item(item):
             cantidad_necesaria = receta.cantidad_requerida * item.cantidad
 
             # Se anota el movimiento, para saber despues que se consumio y por que.
@@ -144,10 +136,22 @@ def descontar_stock(pedido):
                 pedido_relacionado=pedido
             )
 
-            # Y se baja el stock del ingrediente.
+            # Y se baja el stock del ingrediente, aunque quede en negativo.
             ingrediente = receta.ingrediente
+            habia = ingrediente.stock_actual
             ingrediente.stock_actual = ingrediente.stock_actual - cantidad_necesaria
             ingrediente.save()
+
+            ya_anotado = any(i.pk == ingrediente.pk for i in quedaron_en_negativo)
+            if ya_anotado:
+                # El mismo ingrediente aparece dos veces (la Crispy y su
+                # medallon extra): se actualiza para avisar con lo ultimo.
+                quedaron_en_negativo = [i for i in quedaron_en_negativo if i.pk != ingrediente.pk]
+                quedaron_en_negativo.append(ingrediente)
+            elif habia >= 0 and ingrediente.stock_actual < 0:
+                quedaron_en_negativo.append(ingrediente)
+
+    return quedaron_en_negativo
 
 
 @transaction.atomic

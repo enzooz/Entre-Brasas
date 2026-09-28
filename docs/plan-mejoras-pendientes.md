@@ -25,7 +25,7 @@ Recetas (lista "PESTAÑA NUEVO PEDIDO"), cruzada contra el código actual.
 | Cola | Un color por estado (etiqueta, tarjeta y botón) | ✅ Hecho |
 | Cola | "Ver detalle" del mismo tamaño que el botón de estado | ✅ Hecho |
 | Cola | Barra de búsqueda a ancho completo | ✅ Hecho |
-| Cola | Seguir aunque falte stock | ⏳ Pendiente — Tanda 2, falta decisión #2 |
+| Cola | Seguir aunque falte stock | ✅ Hecho (28/09): nunca frena, avisa |
 | Historial | Barra de búsqueda a ancho completo | ✅ Hecho |
 | Historial | Cambios de estado con fecha y hora | ✅ Hecho |
 | Historial | Botón "Eliminar pedido" | ❓ A decidir (#3) |
@@ -60,7 +60,8 @@ hamburguesa o adicional activos. Ese caso sí rompe el descuento de stock.
 - **Opción B — dejarlo en 0:** más prolijo, pero se pierde la señal.
 
 **Recomendación:** A.
-**Decisión:** _pendiente_
+**Decisión:** ✅ **A — stock negativo** (28/09/2026). Además, los pedidos nunca
+se frenan por stock: solo se avisa. Ver Tanda 2.
 
 ### 3. Eliminar pedido
 
@@ -104,15 +105,25 @@ adicionales. Desde el 27/09/2026 todos los campos van por número de fila
    recargar, y limpiarlo cuando el pedido se crea bien.
 2. **Regla de ingredientes:** aplicar la decisión #1.
 
-## TANDA 2 — Seguir aunque falte stock
+## TANDA 2 — Seguir aunque falte stock ✅ Hecho (28/09/2026)
 
-**Archivo:** `app/pedidos/calculos.py` → `descontar_stock()`
+En vez de ofrecer "Continuar de todos modos", se decidió que el stock **nunca
+frene** un pedido: si la hamburguesa se está haciendo, los ingredientes están
+en la cocina aunque el sistema no lo sepa. Motivo: el local no va a cargar el
+inventario real el día que instala, y se descartó arrancar con 999 de stock
+porque los medallones se terminan en pocos días y vuelve a frenar.
 
-La función hace dos pasadas: primero revisa todo el pedido y después descuenta.
-Agregar un parámetro `forzar=False` que saltee la revisión. En la cola, cuando
-aparece el mensaje de stock insuficiente, ofrecer "Continuar de todos modos".
-
-Depende de la decisión #2.
+- `descontar_stock()` (`app/pedidos/calculos.py`) descuenta siempre y el stock
+  puede quedar negativo. Devuelve los ingredientes que **recién** pasaron a
+  negativo, y la cola muestra un aviso una sola vez por ingrediente.
+- **Stock inicial en 0** (`seed_data`): nada de números inventados.
+- **Conteo** en Inventario → Registrar movimiento: se escribe lo que hay de
+  verdad y el sistema guarda la diferencia como entrada o salida, con el
+  motivo "Conteo: había X, se contaron Y".
+- Inventario avisa qué ingredientes están en 0 o en negativo (todavía sin
+  contar) y muestra los negativos en rojo.
+- De paso se arregló que el precio de "Registrar movimiento" era obligatorio
+  aunque la pantalla decía "opcional".
 
 ## TANDA 3 — Clientes
 

@@ -22,6 +22,7 @@ from django.views.decorators.http import require_POST
 
 from menu.models import Hamburguesa, Adicional
 from config.models import Configuracion
+from inventario.models import formatear_cantidad
 
 from .models import Pedido, ItemPedido, AdicionalDeItem, HistorialEstado
 from .calculos import calcular_envio, calcular_total, descontar_stock, devolver_stock
@@ -314,14 +315,21 @@ def avanzar_pedido(request, pedido_id):
 
     # El stock se descuenta cuando el pedido entra en preparacion, no antes:
     # un pedido pendiente todavia no consumio nada.
+    # Nunca frena el pedido: si algun ingrediente queda en negativo, avisa
+    # para que se haga un conteo, pero el pedido sigue.
     if nuevo_estado == 'en_preparacion':
-        try:
-            descontar_stock(pedido)
-        except ValueError as error:
-            # descontar_stock avisa asi cuando falta stock.
-            # Mostramos el mensaje y el pedido no avanza.
-            messages.error(request, str(error))
-            return redirect('pedidos:cola_pedidos')
+        quedaron_en_negativo = descontar_stock(pedido)
+
+        if quedaron_en_negativo:
+            detalle = ', '.join(
+                f'{ingrediente.nombre} (quedo en {formatear_cantidad(ingrediente.stock_actual)} {ingrediente.unidad})'
+                for ingrediente in quedaron_en_negativo
+            )
+            messages.warning(
+                request,
+                f'Ojo: segun el sistema se uso mas de lo que habia de {detalle}. '
+                'Cuando puedas, conta lo que hay y cargalo en Inventario > Registrar movimiento > Conteo.'
+            )
 
     # Guardamos el cambio en el historial ANTES de pisar el estado,
     # porque despues ya no vamos a saber cual era el anterior.

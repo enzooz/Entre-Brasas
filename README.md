@@ -381,6 +381,14 @@ cliente.
 4. **Doble clic en el icono "Entre Brasas"** del escritorio. Se abre el
    navegador con el sistema.
 
+**El stock arranca en 0, y no pasa nada.** El sistema nunca frena un pedido
+por falta de stock: descuenta igual, el número puede quedar en negativo y
+avisa. Así el local puede trabajar desde el primer día sin haber cargado el
+inventario. Cuando cuenten lo que hay en la cocina, se carga desde
+**Inventario → Registrar movimiento → Conteo**: se escribe la cantidad real
+y el sistema ajusta el stock solo. Se puede hacer de a un ingrediente, cuando
+tengan tiempo.
+
 **Uso diario (lo que hace el cliente):** doble clic en el icono. Queda una
 ventana negra minimizada en la barra de tareas: es el servidor, y **no hay
 que cerrarla** mientras se use el sistema. Si se hace doble clic en el icono

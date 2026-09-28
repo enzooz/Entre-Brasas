@@ -102,43 +102,48 @@ class Command(BaseCommand):
         """
         Carga los insumos de la cocina.
 
-        Cada linea es (nombre, stock inicial, unidad, stock minimo, precio de compra).
+        Cada linea es (nombre, unidad, stock minimo, precio de compra).
 
-        Los insumos salen de las descripciones del menu. El stock inicial es
-        una estimacion para que el sistema arranque andando (sin stock no deja
-        pasar pedidos a "en preparacion"): el primer dia hay que contar lo que
-        hay de verdad y corregirlo con un ajuste. El precio de compra va en 0
-        porque no lo sabemos: hay que cargarlo desde Ingredientes para que la
-        pantalla de Costos calcule bien.
+        Los insumos salen de las descripciones del menu.
+
+        El stock arranca en 0 a proposito: no sabemos cuanto hay en la cocina
+        y un numero inventado confunde. El sistema no frena pedidos por falta
+        de stock (ver descontar_stock en pedidos/calculos.py), asi que el
+        local puede trabajar desde el primer dia. El stock va quedando en
+        negativo con lo que se usa, y cuando cuenten lo que hay lo cargan con
+        Inventario > Registrar movimiento > Conteo.
+
+        El precio de compra va en 0 porque no lo sabemos: hay que cargarlo
+        desde Ingredientes para que la pantalla de Costos calcule bien.
         """
         datos = [
-            ('Pan brioche', 60, 'unidades', 20, 0),
-            ('Medallón de carne', 120, 'unidades', 40, 0),
-            ('Cheddar (fetas)', 150, 'unidades', 50, 0),
-            ('Queso tybo (fetas)', 30, 'unidades', 10, 0),
-            ('Panceta', 3, 'kg', 1, 0),
-            ('Jamón', 1, 'kg', 0.3, 0),
-            ('Huevo', 30, 'unidades', 12, 0),
-            ('Lechuga', 1, 'kg', 0.3, 0),
-            ('Tomate', 2, 'kg', 0.5, 0),
-            ('Cebolla', 1, 'kg', 0.3, 0),
-            ('Cebolla morada', 1, 'kg', 0.3, 0),
-            ('Cebolla caramelizada', 1, 'kg', 0.3, 0),
-            ('Cebolla crispy', 1, 'kg', 0.3, 0),
-            ('Pepinillos', 1, 'kg', 0.3, 0),
-            ('Aderezo de la casa', 2, 'L', 0.5, 0),
-            ('Aderezo alioli', 1, 'L', 0.3, 0),
-            ('Mayonesa', 1, 'L', 0.3, 0),
-            ('Papas', 20, 'kg', 5, 0),
+            ('Pan brioche', 'unidades', 20, 0),
+            ('Medallón de carne', 'unidades', 40, 0),
+            ('Cheddar (fetas)', 'unidades', 50, 0),
+            ('Queso tybo (fetas)', 'unidades', 10, 0),
+            ('Panceta', 'kg', 1, 0),
+            ('Jamón', 'kg', 0.3, 0),
+            ('Huevo', 'unidades', 12, 0),
+            ('Lechuga', 'kg', 0.3, 0),
+            ('Tomate', 'kg', 0.5, 0),
+            ('Cebolla', 'kg', 0.3, 0),
+            ('Cebolla morada', 'kg', 0.3, 0),
+            ('Cebolla caramelizada', 'kg', 0.3, 0),
+            ('Cebolla crispy', 'kg', 0.3, 0),
+            ('Pepinillos', 'kg', 0.3, 0),
+            ('Aderezo de la casa', 'L', 0.5, 0),
+            ('Aderezo alioli', 'L', 0.3, 0),
+            ('Mayonesa', 'L', 0.3, 0),
+            ('Papas', 'kg', 5, 0),
         ]
 
         ingredientes = {}
 
-        for nombre, stock, unidad, minimo, precio in datos:
+        for nombre, unidad, minimo, precio in datos:
             ingrediente, creado = Ingrediente.objects.get_or_create(
                 nombre=nombre,
                 defaults={
-                    'stock_actual': stock,
+                    'stock_actual': 0,
                     'unidad': unidad,
                     'stock_minimo': minimo,
                     'precio_compra': precio,

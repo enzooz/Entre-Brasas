@@ -42,18 +42,28 @@ class IngredienteForm(forms.ModelForm):
 
 
 class MovimientoForm(forms.ModelForm):
+    # El tipo se escribe a mano (en vez de dejar que Django lo arme desde el
+    # modelo) porque suma una opcion que no existe en la base: el CONTEO.
+    # En un conteo se escribe cuanto hay de verdad, y la vista calcula la
+    # diferencia y la guarda como una entrada o una salida comun. Asi la
+    # tabla de movimientos sigue teniendo solo entradas y salidas.
+    tipo = forms.ChoiceField(
+        choices=MovimientoInventario.TIPOS + [('conteo', 'Conteo (conte lo que hay de verdad)')],
+        widget=forms.Select(attrs={'class': 'form-control'}),
+    )
+
     class Meta:
         model = MovimientoInventario
 
         # pedido_relacionado no esta: ese campo lo completa el sistema solo
-        # cuando el movimiento lo genera un pedido.
-        fields = ['ingrediente', 'tipo', 'cantidad', 'precio_unitario', 'motivo']
+        # cuando el movimiento lo genera un pedido. "tipo" tampoco: lo
+        # declaramos arriba y la vista lo pasa al movimiento.
+        fields = ['ingrediente', 'cantidad', 'precio_unitario', 'motivo']
 
         widgets = {
             # Django arma la lista de ingredientes sola, a partir de la relacion.
             'ingrediente': forms.Select(attrs={'class': 'form-control'}),
-            'tipo': forms.Select(attrs={'class': 'form-control'}),
-            'cantidad': forms.NumberInput(attrs={'class': 'form-control', 'min': '0.01', 'step': '0.01'}),
+            'cantidad': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '0.01'}),
             'precio_unitario': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'min': '0',
@@ -62,34 +72,54 @@ class MovimientoForm(forms.ModelForm):
             'motivo': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
-    def clean_cantidad(self):
-        """
-        La cantidad siempre es positiva.
+    # El orden en que se muestran los campos en la pantalla.
+    field_order = ['ingrediente', 'tipo', 'cantidad', 'precio_unitario', 'motivo']
 
-        Que el movimiento sume o reste lo decide el campo "tipo"
-        (entrada o salida), no el signo del numero.
-        """
-        cantidad = self.cleaned_data.get('cantidad')
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-        if cantidad <= 0:
-            raise forms.ValidationError('La cantidad tiene que ser mayor a 0')
+        # En el modelo estos dos campos no pueden quedar vacios, asi que
+        # Django los pediria siempre. Pero el precio solo tiene sentido en
+        # una compra, y en un conteo el motivo lo escribe el sistema. Si
+        # hace falta, clean() pide el motivo segun el tipo.
+        self.fields['precio_unitario'].required = False
+        self.fields['motivo'].required = False
 
-        return cantidad
+    def clean_precio_unitario(self):
+        """Si no se escribio precio, queda en 0 (no se actualiza el precio de compra)."""
+        return self.cleaned_data.get('precio_unitario') or 0
 
     def clean_motivo(self):
         """
-        El motivo es obligatorio para poder revisar despues por que se movio
-        el stock.
-
         strip() saca los espacios de los costados, asi alguien no puede poner
         solo espacios para zafar. Ademas guarda el texto ya limpio.
         """
-        motivo = self.cleaned_data.get('motivo')
+        return (self.cleaned_data.get('motivo') or '').strip()
 
-        if not motivo or not motivo.strip():
-            raise forms.ValidationError('Hay que escribir el motivo del movimiento')
+    def clean(self):
+        """
+        Las reglas que dependen del tipo de movimiento:
 
-        return motivo.strip()
+        - Entrada o salida: la cantidad tiene que ser mayor a 0 (que sume o
+          reste lo decide el tipo, no el signo) y el motivo es obligatorio,
+          para poder revisar despues por que se movio el stock.
+        - Conteo: la cantidad puede ser 0 (se conto y no queda nada) y el
+          motivo es opcional, porque el sistema escribe uno solo.
+        """
+        datos = super().clean()
+        tipo = datos.get('tipo')
+        cantidad = datos.get('cantidad')
+
+        if cantidad is not None:
+            if tipo == 'conteo' and cantidad < 0:
+                self.add_error('cantidad', 'La cantidad contada no puede ser negativa')
+            elif tipo != 'conteo' and cantidad <= 0:
+                self.add_error('cantidad', 'La cantidad tiene que ser mayor a 0')
+
+        if tipo != 'conteo' and not datos.get('motivo'):
+            self.add_error('motivo', 'Hay que escribir el motivo del movimiento')
+
+        return datos
 
 
 class RecetaForm(forms.ModelForm):

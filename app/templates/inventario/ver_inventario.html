@@ -6,6 +6,17 @@
 {% block contenido %}
 <a href="{% url 'inventario:registrar_movimiento' %}" class="btn btn-primary">Registrar movimiento</a>
 
+{# Aparece si hay ingredientes en 0 o en negativo: los pedidos nunca se #}
+{# frenan por stock, asi que el numero puede no ser real hasta que se cuente. #}
+{% if sin_contar %}
+<div class="alerta alerta-info">
+    <strong>{{ sin_contar|length }} ingrediente{{ sin_contar|length|pluralize }} en 0 o en negativo.</strong>
+    Todavia no se cargo el stock real, o se uso mas de lo que estaba cargado.
+    Conta lo que hay en la cocina y cargalo con
+    <a href="{% url 'inventario:registrar_movimiento' %}">Registrar movimiento</a> &rarr; Conteo.
+</div>
+{% endif %}
+
 {# Este aviso aparece solo si hay ingredientes por debajo del minimo. #}
 {% if faltantes %}
 <div class="alerta alerta-warning">
@@ -30,7 +41,8 @@
         {% for ingrediente in ingredientes %}
         <tr>
             <td>{{ ingrediente.nombre }}</td>
-            <td>{{ ingrediente.stock_actual }} {{ ingrediente.unidad }}</td>
+            {# En negativo va en rojo: se uso mas de lo que habia cargado. #}
+            <td{% if ingrediente.stock_actual < 0 %} class="stock-negativo"{% endif %}>{{ ingrediente.stock_actual }} {{ ingrediente.unidad }}</td>
             <td>{{ ingrediente.stock_minimo }} {{ ingrediente.unidad }}</td>
             <td>${{ ingrediente.precio_compra }}</td>
             <td>

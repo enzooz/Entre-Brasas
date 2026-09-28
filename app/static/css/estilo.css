@@ -789,6 +789,12 @@ form .chips-adicionales .chip {
     font-weight: 600;
 }
 
+/* Stock en negativo en el inventario: se uso mas de lo que habia cargado. */
+.stock-negativo {
+    color: var(--danger);
+    font-weight: 600;
+}
+
 /* ---------- Pegar mensaje de WhatsApp ---------- */
 .card-pegar textarea {
     resize: vertical;

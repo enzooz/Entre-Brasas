@@ -2,7 +2,7 @@
 Vistas de la app Inventario.
 
 Tiene tres partes:
-  1. Ver el stock y registrar entradas y salidas de insumos.
+  1. Ver el stock y registrar entradas, salidas y conteos de insumos.
   2. Alta, edicion y baja de ingredientes.
   3. Armado de las recetas (que insumos lleva cada producto).
 """
@@ -13,7 +13,7 @@ from django.urls import reverse
 
 from menu.models import Hamburguesa, Adicional
 
-from .models import Ingrediente, MovimientoInventario, Receta
+from .models import Ingrediente, MovimientoInventario, Receta, formatear_cantidad
 from .forms import IngredienteForm, MovimientoForm, RecetaForm
 
 
@@ -27,22 +27,28 @@ def ver_inventario(request):
     # Armamos la lista de los que estan por debajo del minimo.
     # stock_bajo es la property que definimos en el modelo: compara el stock
     # actual contra el stock minimo de ese ingrediente.
+    # Los que estan en 0 o en negativo van aparte: todavia no se cargo el
+    # stock real, o se uso mas de lo cargado (los pedidos nunca se frenan
+    # por stock). Para esos lo que hay que hacer es contar, no comprar.
+    sin_contar = [ingrediente for ingrediente in ingredientes if ingrediente.stock_actual <= 0]
+
     faltantes = []
     for ingrediente in ingredientes:
-        if ingrediente.stock_bajo:
+        if ingrediente.stock_bajo and ingrediente not in sin_contar:
             faltantes.append(ingrediente)
 
     return render(request, 'inventario/ver_inventario.html', {
         'ingredientes': ingredientes,
         'faltantes': faltantes,
+        'sin_contar': sin_contar,
     })
 
 
 @transaction.atomic
 def registrar_movimiento(request):
     """
-    Registra una entrada o una salida de stock hecha a mano: una compra,
-    una perdida o un ajuste.
+    Registra un movimiento de stock hecho a mano: una compra (entrada), una
+    perdida (salida) o un conteo.
 
     Es la unica vista del inventario que ademas de guardar hace una cuenta:
     actualiza el stock del ingrediente.
@@ -58,7 +64,11 @@ def registrar_movimiento(request):
             # commit=False arma el objeto en memoria pero todavia no lo guarda.
             # Lo necesitamos asi porque antes hay que revisar el stock.
             movimiento = form.save(commit=False)
+            movimiento.tipo = form.cleaned_data['tipo']
             ingrediente = movimiento.ingrediente
+
+            if movimiento.tipo == 'conteo':
+                return registrar_conteo(request, movimiento, ingrediente)
 
             if movimiento.tipo == 'salida':
                 # No se puede sacar mas de lo que hay.
@@ -100,6 +110,52 @@ def registrar_movimiento(request):
         # cuando se elige el ingrediente.
         'ingredientes': Ingrediente.objects.all(),
     })
+
+
+def registrar_conteo(request, movimiento, ingrediente):
+    """
+    Pone el stock de un ingrediente en lo que se conto de verdad.
+
+    No es una vista: la llama registrar_movimiento() cuando el tipo es
+    "conteo". En movimiento.cantidad viene lo que se conto.
+
+    El conteo no se guarda como un tipo nuevo: se calcula la diferencia con
+    lo que dice el sistema y se guarda como una entrada (si habia mas) o una
+    salida (si habia menos). Asi queda en el historial cuanto se ajusto y
+    por que. Ejemplo: el sistema dice -2 medallones, se cuentan 80 ->
+    entrada de 82 con el motivo "Conteo: habia -2, se contaron 80".
+    """
+    contado = movimiento.cantidad
+    diferencia = contado - ingrediente.stock_actual
+
+    if diferencia == 0:
+        messages.info(
+            request,
+            f'El stock de {ingrediente.nombre} ya era {formatear_cantidad(contado)} '
+            f'{ingrediente.unidad}: no hubo que ajustar nada.'
+        )
+        return redirect('inventario:ver_inventario')
+
+    motivo = (f'Conteo: habia {formatear_cantidad(ingrediente.stock_actual)}, '
+              f'se contaron {formatear_cantidad(contado)}')
+    if movimiento.motivo:
+        motivo = f'{motivo} ({movimiento.motivo})'
+
+    movimiento.tipo = 'entrada' if diferencia > 0 else 'salida'
+    movimiento.cantidad = abs(diferencia)
+    movimiento.motivo = motivo
+    # En un conteo no se compro nada, asi que el precio no aplica.
+    movimiento.precio_unitario = 0
+    movimiento.save()
+
+    ingrediente.stock_actual = contado
+    ingrediente.save()
+
+    messages.success(
+        request,
+        f'Conteo registrado: {ingrediente.nombre} queda en {formatear_cantidad(contado)} {ingrediente.unidad}.'
+    )
+    return redirect('inventario:ver_inventario')
 
 
 def listar_ingredientes(request):

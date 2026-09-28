@@ -14,6 +14,15 @@ from django.db import models
 from menu.models import Hamburguesa, Adicional
 
 
+def formatear_cantidad(cantidad):
+    """
+    Una cantidad de stock para mostrar en un mensaje: sin ceros de mas y
+    con coma decimal. 80.00 -> "80", -0.04 -> "-0,04", 2.50 -> "2,5".
+    """
+    texto = f'{cantidad:.2f}'.rstrip('0').rstrip('.')
+    return texto.replace('.', ',')
+
+
 class Ingrediente(models.Model):
     """Un insumo de la cocina: carne, pan, queso, aceite, etc."""
 
