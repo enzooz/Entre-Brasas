@@ -4,7 +4,7 @@
 {% block encabezado %}Ingredientes{% endblock %}
 
 {% block contenido %}
-<a href="{% url 'inventario:crear_ingrediente' %}" class="btn btn-primary">+ Nuevo ingrediente</a>
+<div class="section-toolbar"><p>Para cambiar las cantidades, <a href="{% url 'inventario:registrar_movimiento' %}">registrá un movimiento</a>.</p><a href="{% url 'inventario:crear_ingrediente' %}" class="btn btn-primary">{% include 'components/icon.html' with nombre='plus' %}Nuevo ingrediente</a></div>
 
 <table>
     <thead>

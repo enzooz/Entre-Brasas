@@ -13,15 +13,16 @@ pasamos es la que hace que el titulo diga "Nueva" o "Editar".
 """
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.db.models import Prefetch
 
 from .models import Hamburguesa, Adicional
 from .forms import HamburguesaForm, AdicionalForm
 
 
 def listar_hamburguesas(request):
-    """Muestra todas las hamburguesas, activas y desactivadas."""
+    """Muestra solo el menú activo, sin borrar productos del historial."""
     return render(request, 'menu/listar_hamburguesas.html', {
-        'hamburguesas': Hamburguesa.objects.all()
+        'hamburguesas': Hamburguesa.objects.filter(activa=True)
     })
 
 
@@ -108,9 +109,11 @@ def activar_hamburguesa(request, hamburguesa_id):
 
 
 def listar_adicionales(request):
-    """Muestra todos los adicionales."""
+    """Muestra adicionales activos y sus hamburguesas disponibles."""
     return render(request, 'menu/listar_adicionales.html', {
-        'adicionales': Adicional.objects.all()
+        'adicionales': Adicional.objects.filter(activo=True).prefetch_related(
+            Prefetch('hamburguesas', queryset=Hamburguesa.objects.filter(activa=True), to_attr='hamburguesas_activas')
+        )
     })
 
 

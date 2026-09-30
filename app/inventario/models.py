@@ -11,7 +11,20 @@ La idea: cuando un pedido pasa a "en preparacion", el sistema mira la receta
 de cada hamburguesa, descuenta del stock y deja anotado el movimiento.
 """
 from django.db import models
+from django.db.models import Q
 from menu.models import Hamburguesa, Adicional
+
+
+def ingredientes_del_menu_activo():
+    """Stock relevante para hamburguesas activas y sus adicionales activos.
+
+    Filtrar, no borrar: las recetas, existencias y movimientos de productos
+    anteriores deben seguir disponibles para el historial.
+    """
+    return Ingrediente.objects.filter(activo=True).filter(
+        Q(recetas__hamburguesa__activa=True)
+        | Q(recetas__adicional__activo=True, recetas__adicional__hamburguesas__activa=True)
+    ).distinct()
 
 
 def formatear_cantidad(cantidad):

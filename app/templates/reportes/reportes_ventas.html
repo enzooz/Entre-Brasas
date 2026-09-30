@@ -2,15 +2,16 @@
 
 {% block titulo %}Reportes - Entre Brasas{% endblock %}
 {% block encabezado %}Reportes de ventas{% endblock %}
+{% block header_actions %}<a href="{% url 'costos:ver_costos' %}" class="btn btn-secondary">{% include 'components/icon.html' with nombre='wallet' %}Ver costos y ganancias</a>{% endblock %}
 
 {% block contenido %}
 
 <form method="GET" class="filter-bar">
-    <label>Desde</label>
-    <input type="date" name="fecha_desde" class="form-control" value="{{ fecha_desde }}">
+    <div><label for="reporteDesde">Desde</label>
+    <input type="date" id="reporteDesde" name="fecha_desde" class="form-control" value="{{ fecha_desde }}"></div>
 
-    <label>Hasta</label>
-    <input type="date" name="fecha_hasta" class="form-control" value="{{ fecha_hasta }}">
+    <div><label for="reporteHasta">Hasta</label>
+    <input type="date" id="reporteHasta" name="fecha_hasta" class="form-control" value="{{ fecha_hasta }}"></div>
 
     <button type="submit" class="btn btn-primary">Filtrar</button>
     <a href="{% url 'reportes:reportes_ventas' %}" class="btn btn-secondary">Limpiar</a>
@@ -18,18 +19,15 @@
 
 <p><small>Solo se cuentan los pedidos entregados. Los cancelados no son venta.</small></p>
 
-<div class="card">
-    <h2>Resumen</h2>
-    <div class="cost-summary">
-        <p class="total-highlight">Ventas totales: ${{ total_vendido }}</p>
-        <p>Pedidos entregados: {{ cantidad_pedidos }}</p>
-        <p>Ticket promedio: ${{ ticket_promedio }}</p>
-        <p>Cobrado por envios: ${{ total_envios }}</p>
-    </div>
+<div class="report-stats" aria-label="Resumen de ventas">
+    <div class="report-stat"><span>Ventas totales</span><strong>${{ total_vendido }}</strong></div>
+    <div class="report-stat"><span>Pedidos entregados</span><strong>{{ cantidad_pedidos }}</strong></div>
+    <div class="report-stat"><span>Ticket promedio</span><strong>${{ ticket_promedio }}</strong></div>
+    <div class="report-stat"><span>Cobrado por envíos</span><strong>${{ total_envios }}</strong></div>
 </div>
 
 <div class="card">
-    <h2>Como pagaron</h2>
+    <h2>Cómo pagaron</h2>
     <table>
         <thead>
             <tr>
@@ -50,8 +48,9 @@
     </table>
 </div>
 
+<div class="report-columns">
 <div class="card">
-    <h2>Hamburguesas mas vendidas</h2>
+    <h2>Hamburguesas más vendidas</h2>
     <table>
         <thead>
             <tr>
@@ -75,7 +74,7 @@
 </div>
 
 <div class="card">
-    <h2>Adicionales mas pedidos</h2>
+    <h2>Adicionales más pedidos</h2>
     <table>
         <thead>
             <tr>
@@ -96,6 +95,8 @@
             {% endfor %}
         </tbody>
     </table>
+</div>
+
 </div>
 
 {% endblock %}

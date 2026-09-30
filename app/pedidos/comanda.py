@@ -14,13 +14,6 @@ En los envios se agregan la direccion, el telefono, el pago y el total,
 que le sirven al cadete.
 """
 
-# Como se llama una hamburguesa segun cuantos medallones extra lleva.
-NOMBRE_SEGUN_MEDALLONES = {
-    1: 'doble',
-    2: 'triple',
-}
-
-
 def formatear_precio(precio):
     """30000 -> "30.000", con punto de miles como se escribe aca."""
     return f'{precio:,}'.replace(',', '.')
@@ -28,10 +21,10 @@ def formatear_precio(precio):
 
 def describir_item(item):
     """
-    Arma la linea de una hamburguesa: "1 Crispy doble + Panceta".
+    Arma la linea de una hamburguesa: "1 Crispy + 1 medallón extra + Panceta".
 
-    Los medallones extra no se listan como adicional: cambian el nombre
-    ("doble", "triple"), que es como lo dicen en la cocina.
+    Indicamos los extras explícitamente: "doble" resulta ambiguo para
+    hamburguesas que ya incluyen dos o tres medallones en su receta base.
     """
     medallones_extra = 0
     otros_adicionales = []
@@ -44,10 +37,9 @@ def describir_item(item):
 
     linea = f'{item.cantidad} {item.hamburguesa.nombre}'
 
-    if medallones_extra in NOMBRE_SEGUN_MEDALLONES:
-        linea = linea + ' ' + NOMBRE_SEGUN_MEDALLONES[medallones_extra]
-    elif medallones_extra > 0:
-        linea = linea + f' + {medallones_extra} medallones extra'
+    if medallones_extra > 0:
+        nombre = 'medallón extra' if medallones_extra == 1 else 'medallones extra'
+        linea = linea + f' + {medallones_extra} {nombre}'
 
     for nombre in otros_adicionales:
         linea = linea + ' + ' + nombre

@@ -22,3 +22,5 @@ Thumbs.db
 
 # Copias de seguridad que hace "python manage.py respaldar" en desarrollo
 copias_de_seguridad/
+app/servidor.log
+app/arranque-*.lock

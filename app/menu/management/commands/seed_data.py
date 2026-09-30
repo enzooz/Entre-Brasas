@@ -14,10 +14,12 @@ no reconoce las carpetas.
 Sirve para dejar la base lista para usar (menu, insumos, recetas y
 configuracion) sin tener que cargar todo a mano desde las pantallas.
 
-Todo usa get_or_create, asi que se puede correr varias veces sin que se
-dupliquen los datos: si el registro ya existe, lo reutiliza.
+Por defecto usa get_or_create para conservar datos existentes. Con
+--reemplazar-menu actualiza nombres del menú real, precios y descripciones,
+y desactiva otros productos sin borrar historial ni alterar stock existente.
 """
 from django.core.management.base import BaseCommand
+from django.db import transaction
 
 from menu.models import Hamburguesa, Adicional
 from inventario.models import Ingrediente, Receta
@@ -33,13 +35,23 @@ class Command(BaseCommand):
         # correr la instalacion para actualizar, no le reaparecen productos
         # que el haya renombrado o desactivado.
         parser.add_argument(
+            '--reemplazar-menu',
+            action='store_true',
+            help='Actualiza el menú real y desactiva otros productos sin borrar pedidos ni stock',
+        )
+        parser.add_argument(
             '--si-esta-vacia',
             action='store_true',
             help='Solo carga los datos si todavia no hay hamburguesas cargadas',
         )
 
+    @transaction.atomic
     def handle(self, *args, **options):
         """Django ejecuta este metodo cuando se corre el comando."""
+        if options['si_esta_vacia'] and options['reemplazar_menu']:
+            from django.core.management.base import CommandError
+            raise CommandError('Usá --si-esta-vacia o --reemplazar-menu, no ambas opciones.')
+        self.reemplazar_menu = options['reemplazar_menu']
         if options['si_esta_vacia'] and Hamburguesa.objects.exists():
             self.stdout.write('La base ya tiene datos: no se carga nada.')
             return
@@ -85,17 +97,21 @@ class Command(BaseCommand):
             # get_or_create busca por nombre. Si no lo encuentra, crea el
             # registro con los valores que estan en "defaults".
             # Devuelve dos cosas: el objeto y si lo tuvo que crear.
-            hamburguesa, creada = Hamburguesa.objects.get_or_create(
+            guardar = Hamburguesa.objects.update_or_create if self.reemplazar_menu else Hamburguesa.objects.get_or_create
+            hamburguesa, creada = guardar(
                 nombre=nombre,
                 defaults={
                     'descripcion': descripcion,
                     'precio': precio,
                     'incluye_papas': papas,
+                    'activa': True,
                 }
             )
             hamburguesas[nombre] = hamburguesa
             self.stdout.write(f'  Hamburguesa: {nombre}')
 
+        if self.reemplazar_menu:
+            Hamburguesa.objects.exclude(pk__in=[h.pk for h in hamburguesas.values()]).update(activa=False)
         return hamburguesas
 
     def cargar_ingredientes(self):
@@ -171,11 +187,13 @@ class Command(BaseCommand):
         ]
 
         for nombre, precio, receta in datos:
-            adicional, creado = Adicional.objects.get_or_create(
+            guardar = Adicional.objects.update_or_create if self.reemplazar_menu else Adicional.objects.get_or_create
+            adicional, creado = guardar(
                 nombre=nombre,
                 defaults={
                     'precio': precio,
-                    # El medallon extra es el que hace "doble" a una hamburguesa.
+                    'activo': True,
+                    # El medallon extra se ofrece aparte, indicando cuántos se suman.
                     'es_medallon_extra': nombre == 'Medallón extra',
                 }
             )
@@ -192,6 +210,9 @@ class Command(BaseCommand):
                 )
 
             self.stdout.write(f'  Adicional: {nombre}')
+
+        if self.reemplazar_menu:
+            Adicional.objects.exclude(nombre__in=[dato[0] for dato in datos]).update(activo=False)
 
     def cargar_recetas(self, hamburguesas, ingredientes):
         """
@@ -303,7 +324,7 @@ class Command(BaseCommand):
         Configuracion.objects.get_or_create(
             pk=1,
             defaults={
-                'tarifa_km': 500,
+                'tarifa_100m': 50,
                 'distancia_minima': 1,
                 'costo_minimo_envio': 1000,
                 'costo_hora_mano_obra': 2500,

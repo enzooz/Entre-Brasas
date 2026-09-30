@@ -11,12 +11,12 @@
     {# Este formulario va por GET: al enviarlo, el producto elegido queda #}
     {# en la direccion (?tipo=hamburguesa&producto=3) y la vista lo lee. #}
     <form method="GET" class="filter-bar">
-        <select name="tipo" class="form-control">
+        <select name="tipo" class="form-control" aria-label="Tipo de producto">
             <option value="hamburguesa" {% if tipo == 'hamburguesa' %}selected{% endif %}>Hamburguesa</option>
             <option value="adicional" {% if tipo == 'adicional' %}selected{% endif %}>Adicional</option>
         </select>
 
-        <select name="producto" class="form-control">
+        <select name="producto" class="form-control" aria-label="Producto de la receta">
             <option value="">Elegir producto...</option>
 
             <optgroup label="Hamburguesas">

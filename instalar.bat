@@ -51,9 +51,9 @@ venv\Scripts\python.exe manage.py migrate || goto error
 venv\Scripts\python.exe manage.py seed_data --si-esta-vacia || goto error
 
 echo [4/4] Creando el acceso directo en el escritorio...
-rem WindowStyle 7 = la ventana del servidor arranca minimizada.
+rem pythonw ejecuta sin consola. El apagado se hace desde la web.
 rem IconLocation = el logo de Entre Brasas en vez del icono generico de .bat.
-powershell -NoProfile -Command "$s = (New-Object -ComObject WScript.Shell).CreateShortcut([Environment]::GetFolderPath('Desktop') + '\Entre Brasas.lnk'); $s.TargetPath = '%~dp0iniciar.bat'; $s.WorkingDirectory = '%~dp0'; $s.WindowStyle = 7; $s.IconLocation = '%~dp0app\static\img\entre-brasas.ico'; $s.Save()" || goto error
+powershell -NoProfile -Command "$s = (New-Object -ComObject WScript.Shell).CreateShortcut([Environment]::GetFolderPath('Desktop') + '\Entre Brasas.lnk'); $s.TargetPath = '%~dp0app\venv\Scripts\pythonw.exe'; $s.Arguments = [char]34 + '%~dp0app\iniciar.py' + [char]34; $s.WorkingDirectory = '%~dp0app'; $s.IconLocation = '%~dp0app\static\img\entre-brasas.ico'; $s.Save()" || goto error
 
 echo.
 echo ============================================================
@@ -61,6 +61,7 @@ echo   Listo. Entre Brasas quedo instalado.
 echo.
 echo   Para usarlo, hace doble clic en el icono "Entre Brasas"
 echo   del escritorio.
+echo   Para apagarlo, usa "Apagar sistema" dentro de la web.
 echo ============================================================
 echo.
 pause

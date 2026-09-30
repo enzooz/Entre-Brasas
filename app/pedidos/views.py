@@ -14,11 +14,14 @@ F5 se vuelva a mandar el mismo pedido dos veces.
 Las cuentas no estan aca, estan en calculos.py.
 """
 from urllib.parse import quote
+from decimal import Decimal, InvalidOperation
+from uuid import UUID
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from django.db import transaction
 
 from menu.models import Hamburguesa, Adicional
 from config.models import Configuracion
@@ -30,6 +33,7 @@ from .comanda import armar_comanda
 from .interpretar import interpretar_mensaje
 
 
+@transaction.atomic
 def crear_pedido(request):
     """
     Pantalla para cargar un pedido nuevo. Es la pantalla principal del sistema.
@@ -53,7 +57,7 @@ def crear_pedido(request):
         # Si retira, la distancia no importa aunque haya quedado escrita.
         distancia_km = 0
         if not retiro_local:
-            distancia_km = request.POST.get('distancia_km') or 0
+            distancia_km = Decimal(request.POST['distancia_km'].replace(',', '.'))
 
         pedido = Pedido.objects.create(
             cliente_nombre=request.POST.get('cliente_nombre', '').strip(),
@@ -75,7 +79,16 @@ def crear_pedido(request):
 
         # Vamos al detalle, donde esta la comanda lista para mandar a cocina.
         messages.success(request, f'Pedido #{pedido.pk} creado. Mandale la comanda a la cocina.')
-        return redirect('pedidos:detalle_pedido', pedido_id=pedido.pk)
+        respuesta = redirect('pedidos:detalle_pedido', pedido_id=pedido.pk)
+        try:
+            token = UUID(request.POST.get('borrador_token', ''))
+        except (ValueError, TypeError, AttributeError):
+            token = None
+        if token:
+            # Señal no secreta, emitida solo después de guardar correctamente.
+            # Una cookie por token evita mezclar pedidos de pestañas distintas.
+            respuesta.set_cookie('eb_pedido_creado_' + token.hex, '1', max_age=300, samesite='Strict')
+        return respuesta
 
     # Si es GET mostramos el formulario con los productos disponibles.
     # Solo los activos: los dados de baja no se ofrecen.
@@ -90,12 +103,12 @@ def crear_pedido(request):
                 datos_de_adicional(adicional)
                 for adicional in Adicional.objects.filter(activo=True, es_medallon_extra=False)
             ],
-            # El medallon extra va aparte porque tiene su propio selector
-            # Simple / Doble / Triple. Si no hay ninguno marcado, es None.
+            # El medallon extra va aparte: se pueden sumar uno o dos a la
+            # receta base. Si no hay ninguno disponible, es None.
             'medallon_extra': datos_de_adicional(
                 Adicional.objects.filter(activo=True, es_medallon_extra=True).first()
             ),
-            'tarifa_km': configuracion.tarifa_km,
+            'tarifa_100m': str(configuracion.tarifa_100m),
             'distancia_minima': float(configuracion.distancia_minima),
             'costo_minimo_envio': configuracion.costo_minimo_envio,
         },
@@ -150,11 +163,43 @@ def validar_pedido(datos, retiro_local):
     if not any(datos.get(f'hamburguesa_{fila}') for fila in filas):
         return 'El pedido no tiene ninguna hamburguesa.'
 
+    if len(filas) > 100 or len(set(filas)) != len(filas):
+        return 'El pedido admite hasta 100 hamburguesas, cada una en su propia fila.'
+    cantidad_total = 0
+    for fila in filas:
+        try:
+            cantidad = int(datos.get(f'cantidad_{fila}') or 1)
+            medallones = int(datos.get(f'medallones_{fila}') or 0)
+            producto_id = int(datos.get(f'hamburguesa_{fila}') or 0)
+            extras = [int(pk) for pk in datos.getlist(f'adicionales_{fila}[]')]
+        except (ValueError, TypeError):
+            return 'Revisá las hamburguesas y los adicionales del pedido.'
+        cantidad_total += cantidad
+        if cantidad < 1 or cantidad_total > 100 or medallones not in (0, 1, 2):
+            return 'Revisá las cantidades: hasta 100 hamburguesas y hasta 2 medallones extra por unidad.'
+        if not Hamburguesa.objects.filter(pk=producto_id, activa=True).exists():
+            return 'Una hamburguesa ya no está disponible. Volvé a elegirla del menú.'
+        permitidos = Adicional.objects.filter(activo=True, es_medallon_extra=False, hamburguesas=producto_id)
+        if len(extras) != len(set(extras)) or permitidos.filter(pk__in=extras).count() != len(extras):
+            return 'Un adicional no está disponible para esa hamburguesa.'
+        if medallones and not Adicional.objects.filter(activo=True, es_medallon_extra=True, hamburguesas=producto_id).exists():
+            return 'Esa hamburguesa no admite medallones extra.'
+        if len(datos.get(f'nota_{fila}', '').strip()) > 200:
+            return 'La nota de cada hamburguesa admite hasta 200 caracteres.'
+
     if not retiro_local:
         if not datos.get('cliente_direccion', '').strip():
             return 'Para un envio hace falta la direccion o el link de Maps.'
         if not datos.get('cliente_telefono', '').strip():
             return 'Para un envio hace falta el telefono.'
+        try:
+            distancia = Decimal(datos.get('distancia_km', '').replace(',', '.'))
+            if not distancia.is_finite() or distancia < 0 or distancia > Decimal('999.9'):
+                return 'Ingresá una distancia entre 0 y 999,9 km.'
+            if distancia != distancia.quantize(Decimal('0.1')):
+                return 'Ingresá la distancia con hasta un decimal, por ejemplo 5,4 km.'
+        except InvalidOperation:
+            return 'Ingresá la distancia en kilómetros, por ejemplo 5,4.'
 
     return None
 
@@ -173,7 +218,7 @@ def crear_items_del_pedido(pedido, datos):
         filas[]         = ['0', '1']        las filas que hay
         hamburguesa_0   = '4'               que hamburguesa es
         cantidad_0      = '1'
-        medallones_0    = '1'               0 simple, 1 doble, 2 triple
+        medallones_0    = '1'               cantidad de medallones extra
         adicionales_0[] = ['7', '9']        los demas adicionales
         nota_0          = 'dip de alioli'
 
@@ -193,15 +238,7 @@ def crear_items_del_pedido(pedido, datos):
 
         hamburguesa = get_object_or_404(Hamburguesa, pk=id_hamburguesa)
 
-        item = ItemPedido.objects.create(
-            pedido=pedido,
-            hamburguesa=hamburguesa,
-            cantidad=max(1, int(datos.get(f'cantidad_{fila}') or 1)),
-            precio_unitario=hamburguesa.precio,  # se guarda el precio de hoy
-            nota=datos.get(f'nota_{fila}', '').strip(),
-        )
-
-        # Doble = un medallon extra, triple = dos. Cada uno es una linea
+        # Cada medallon extra es una linea
         # de adicional, asi se cobra y se descuenta del stock como cualquier otro.
         adicionales = []
         if medallon_extra:
@@ -212,12 +249,18 @@ def crear_items_del_pedido(pedido, datos):
             if id_adicional:
                 adicionales.append(get_object_or_404(Adicional, pk=id_adicional))
 
-        for adicional in adicionales:
-            AdicionalDeItem.objects.create(
-                item=item,
-                adicional=adicional,
-                precio=adicional.precio  # tambien se congela el precio
+        # También separamos unidades de clientes antiguos que manden cantidad
+        # mayor a 1. Nunca se agrupan items de hamburguesas diferentes.
+        for unidad in range(int(datos.get(f'cantidad_{fila}') or 1)):
+            item = ItemPedido.objects.create(
+                pedido=pedido, hamburguesa=hamburguesa, cantidad=1,
+                precio_unitario=hamburguesa.precio,
+                nota=datos.get(f'nota_{fila}', '').strip(),
             )
+            for adicional in adicionales:
+                AdicionalDeItem.objects.create(
+                    item=item, adicional=adicional, precio=adicional.precio,
+                )
 
 
 def cola_pedidos(request):

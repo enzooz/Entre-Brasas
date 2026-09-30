@@ -1,17 +1,20 @@
 {% extends 'base.html' %}
 
 {% block titulo %}Cola de pedidos - Entre Brasas{% endblock %}
-{% block encabezado %}Cola de pedidos{% endblock %}
+{% block encabezado %}Pedidos en curso{% endblock %}
+{% block header_actions %}<a href="{% url 'pedidos:crear_pedido' %}" class="btn btn-primary">{% include 'components/icon.html' with nombre='plus' %}Tomar un pedido</a>{% endblock %}
 
 {% block contenido %}
+
+<div class="flow-help" aria-label="Estados del pedido"><span class="badge badge-pendiente">Pendiente</span>{% include 'components/icon.html' with nombre='chevron' %}<span class="badge badge-en_preparacion">En preparación</span>{% include 'components/icon.html' with nombre='chevron' %}<span class="badge badge-en_camino">En camino</span>{% include 'components/icon.html' with nombre='chevron' %}<span class="badge badge-entregado">Entregado</span></div>
 
 {# Los filtros se mandan por GET: quedan en la direccion del navegador, #}
 {# asi se puede recargar o guardar la busqueda. #}
 <form method="GET" class="filter-bar">
-    <input type="text" name="busqueda" class="form-control"
+    <input type="text" name="busqueda" class="form-control" aria-label="Buscar por cliente"
            placeholder="Buscar por cliente" value="{{ busqueda }}">
 
-    <select name="estado" class="form-control">
+    <select name="estado" class="form-control" aria-label="Filtrar por estado">
         <option value="">Todos los estados</option>
         {% for valor, texto in estados %}
             {% if valor != 'entregado' and valor != 'cancelado' %}
@@ -24,6 +27,7 @@
     <a href="{% url 'pedidos:cola_pedidos' %}" class="btn btn-secondary">Limpiar</a>
 </form>
 
+<div class="queue-grid">
 {% for pedido in pedidos %}
 <div class="card order-card card-{{ pedido.estado }}">
     <h2>Pedido #{{ pedido.pk }} - {{ pedido.cliente_nombre }}</h2>
@@ -56,18 +60,20 @@
         <form method="POST" action="{% url 'pedidos:avanzar_pedido' pedido.pk %}" class="form-boton">
             {% csrf_token %}
             <button type="submit" class="btn btn-{{ pedido.siguiente_estado }}">
-                Pasar a {{ pedido.siguiente_estado_display }}
+                {% if pedido.estado == 'pendiente' %}Empezar preparación{% elif pedido.estado == 'en_preparacion' %}Marcar en camino{% else %}Marcar entregado{% endif %}
             </button>
         </form>
     </div>
 </div>
 {% empty %}
 <div class="empty-state">
-    <h2>No hay pedidos en curso</h2>
-    <p>Los pedidos nuevos van a aparecer aca.</p>
+    <h2>{% if busqueda or estado %}No encontramos pedidos con esos filtros{% else %}La cocina está al día{% endif %}</h2>
+    <p>{% if busqueda or estado %}Probá con otro cliente o limpiá los filtros para ver todos los pedidos.{% else %}Tomá un pedido y seguí su preparación desde acá.{% endif %}</p>
+    {% if busqueda or estado %}<a href="{% url 'pedidos:cola_pedidos' %}" class="btn btn-secondary">Limpiar filtros</a>{% endif %}
     <a href="{% url 'pedidos:crear_pedido' %}" class="btn btn-primary">Cargar un pedido</a>
 </div>
 {% endfor %}
+</div>
 
 <script src="/static/js/comanda.js"></script>
 {% endblock %}

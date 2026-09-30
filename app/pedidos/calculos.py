@@ -11,6 +11,7 @@ de aca. La ventaja es que cada archivo hace una sola cosa:
     calculos.py -> las cuentas
 """
 from django.db import transaction
+from decimal import Decimal, ROUND_HALF_UP
 
 from config.models import Configuracion
 from inventario.models import Receta, MovimientoInventario
@@ -23,8 +24,8 @@ def calcular_envio(distancia_km, retiro_local):
     Las reglas son:
       1. Si el cliente retira en el local, no paga envio.
       2. Si vive mas cerca que la distancia minima, tampoco paga.
-      3. Si no, paga distancia x tarifa por km.
-      4. Pero nunca paga menos que el costo minimo de envio.
+      3. Si no, paga el envio minimo MAS la tarifa por toda la distancia:
+         envio minimo + distancia en km x 10 x tarifa por cada 100 metros.
 
     Los tres valores de configuracion (distancia minima, tarifa y costo minimo)
     los puede cambiar el duenio desde la pantalla de configuracion.
@@ -34,22 +35,20 @@ def calcular_envio(distancia_km, retiro_local):
 
     # El "or 0" cubre el caso en que el campo llegue vacio, porque
     # convertir un texto vacio a numero da error.
-    distancia = float(distancia_km or 0)
+    distancia = Decimal(str(distancia_km or 0).replace(',', '.'))
 
     configuracion = Configuracion.get_config()
 
-    if distancia < float(configuracion.distancia_minima):
+    if distancia < configuracion.distancia_minima:
         return 0
 
-    costo = distancia * configuracion.tarifa_km
+    # El minimo es un importe base, no un piso que reemplaza la tarifa.
+    costo = (Decimal(configuracion.costo_minimo_envio)
+             + distancia * Decimal('10') * configuracion.tarifa_100m)
 
-    # Si la cuenta dio menos que el minimo, se cobra el minimo.
-    if costo < configuracion.costo_minimo_envio:
-        costo = configuracion.costo_minimo_envio
-
-    # round() antes de devolver: el costo se guarda como numero entero de pesos,
-    # asi que redondeamos nosotros en vez de dejar que se corten los decimales.
-    return round(costo)
+    # Solo se redondea el importe a pesos, NUNCA la distancia. 5,4 km son
+    # exactamente 54 tramos. HALF_UP coincide con Math.round del navegador.
+    return int(Decimal(costo).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
 
 
 def calcular_total(pedido):

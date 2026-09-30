@@ -109,7 +109,7 @@
     <form method="POST" action="{% url 'pedidos:avanzar_pedido' pedido.pk %}" class="form-boton">
         {% csrf_token %}
         <button type="submit" class="btn btn-{{ pedido.siguiente_estado }}">
-            Pasar a {{ pedido.siguiente_estado_display }}
+            {% if pedido.estado == 'pendiente' %}Empezar preparación{% elif pedido.estado == 'en_preparacion' %}Marcar en camino{% else %}Marcar entregado{% endif %}
         </button>
     </form>
 

@@ -243,6 +243,19 @@ porque la base no se comparte. Hay que agregarlo en
 corren `python manage.py seed_data` (se puede correr varias veces sin
 duplicar nada).
 
+**Si la base conserva el menú de prueba anterior (BBQ, Clásica, etc.):**
+desde `app`, corré primero `python manage.py respaldar`, después
+`python manage.py migrate` y finalmente
+`python manage.py seed_data --reemplazar-menu`. Esta opción carga el menú real,
+actualiza sus precios y desactiva los productos anteriores sin borrar pedidos
+ni modificar el stock existente. El comando normal conserva los datos ya
+cargados; un `git pull` por sí solo no actualiza el menú de la base.
+
+La configuración del envío ahora expresa la tarifa por **100 metros**. La
+migración divide la tarifa anterior por 10 para conservar el precio equivalente.
+La distancia se ingresa en kilómetros exactos: 5,4 km cobra 54 veces la tarifa,
+respetando el umbral de envío gratis y el costo mínimo configurados.
+
 ---
 
 ### 5. Ver o editar los datos
@@ -355,7 +368,7 @@ local del cliente" (ver `PRODUCCION` en `app/entre_brasas/settings.py`):
 
 | | En desarrollo (nosotros) | En la compu del cliente |
 |---|---|---|
-| Como se abre | `python manage.py runserver` | Icono del escritorio (`iniciar.bat`) |
+| Como se abre | `python manage.py runserver` | Icono del escritorio (`pythonw.exe iniciar.py`, sin consola) |
 | Direccion | http://127.0.0.1:8000 | http://127.0.0.1:8765 |
 | Base de datos | `app/db.sqlite3` | `C:\Users\<usuario>\AppData\Local\EntreBrasas\db.sqlite3` |
 | Si hay un error | Pantalla con el detalle (`DEBUG` activado) | Mensaje normal; el detalle queda en `errores.log`, en la misma carpeta que la base |
@@ -389,14 +402,42 @@ inventario. Cuando cuenten lo que hay en la cocina, se carga desde
 y el sistema ajusta el stock solo. Se puede hacer de a un ingrediente, cuando
 tengan tiempo.
 
-**Uso diario (lo que hace el cliente):** doble clic en el icono. Queda una
-ventana negra minimizada en la barra de tareas: es el servidor, y **no hay
-que cerrarla** mientras se use el sistema. Si se hace doble clic en el icono
-con el sistema ya abierto, solo se abre otra pestania.
+**Uso diario (lo que hace el cliente):** doble clic en el icono. El servidor
+arranca en segundo plano, sin ventana negra. Cerrar el navegador no apaga
+Entre Brasas; se puede volver a abrir desde el mismo icono.
+
+**Para apagar:** dentro de la web, al pie del menú, tocar **Apagar sistema**
+y después **Sí, apagar sistema**. Antes guardar los formularios abiertos:
+se conservan los pedidos guardados, no los cambios que todavía no se enviaron.
+Esto apaga Entre Brasas para todas las pestañas, no la computadora. Para
+volver a trabajar, abrir otra vez el icono del escritorio. No hay un acceso
+extra para apagar en el escritorio.
+
+Las pantallas que ya estaban abiertas quedan en gris y bloqueadas, con el
+aviso **Sistema apagado**. No se pueden editar campos, guardar ni usar las
+acciones del menú. Las otras pestañas reciben el aviso y también se bloquean.
+Si el servidor deja de responder sin un apagado confirmado, el aviso dice
+**Sistema sin conexión** y se aplica el mismo bloqueo. Al reabrir desde el
+icono, aparece **Volver al inicio**: carga los datos actuales sin enviar
+automáticamente formularios pendientes.
+
+**Pedido a medio cargar:** Nuevo pedido guarda un borrador automático en esa
+pestaña del navegador. Se puede ir a otra sección, volver o recargar y seguir
+con cliente, hamburguesas, extras por unidad, notas, envío, pago y mensaje de
+WhatsApp. No crea un pedido ni envía esos datos al servidor. El borrador se
+limpia después de crear correctamente el pedido, o con **Descartar borrador**
+y su confirmación. Cada pestaña mantiene su propio borrador; cerrar la pestaña
+termina esa sesión. Al recuperarlo se usan los precios y tarifas actuales y
+se avisa si algún producto o extra ya no está disponible.
+
+Si se hace doble clic con el sistema ya abierto, solo se abre otra pestaña.
+Si hay un error de arranque, aparece un aviso y el detalle queda en
+`servidor.log`, junto a la base del cliente. El instalador sigue mostrando
+su progreso una sola vez; esa ventana se puede cerrar cuando dice Listo.
 
 **Actualizar a una version nueva:**
 
-1. Cerrar el sistema (cerrar la ventana negra).
+1. Apagar el sistema desde el botón de la web y confirmar.
 2. Reemplazar la carpeta del programa por la nueva, en el mismo lugar.
 3. Doble clic en `instalar.bat` otra vez. Hace una copia de seguridad,
    instala lo nuevo y aplica las migraciones. No vuelve a cargar los datos
@@ -404,7 +445,7 @@ con el sistema ya abierto, solo se abre otra pestania.
 
 **Recuperar una copia de seguridad:**
 
-1. Cerrar el sistema.
+1. Apagar el sistema desde la web y confirmar.
 2. Abrir la carpeta de datos: tecla Windows + R, escribir
    `%LOCALAPPDATA%\EntreBrasas` y Enter.
 3. Renombrar `db.sqlite3` a `db-rota.sqlite3` (por las dudas).

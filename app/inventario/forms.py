@@ -3,7 +3,7 @@ Formularios de la app Inventario.
 """
 from django import forms
 
-from .models import Ingrediente, MovimientoInventario, Receta
+from .models import Ingrediente, MovimientoInventario, Receta, ingredientes_del_menu_activo
 
 
 class IngredienteForm(forms.ModelForm):
@@ -77,6 +77,7 @@ class MovimientoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['ingrediente'].queryset = ingredientes_del_menu_activo()
 
         # En el modelo estos dos campos no pueden quedar vacios, asi que
         # Django los pediria siempre. Pero el precio solo tiene sentido en

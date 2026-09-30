@@ -6,12 +6,11 @@
 {% block contenido %}
 <a href="{% url 'inventario:ver_inventario' %}" class="back-link">&laquo; Volver al inventario</a>
 
-<div class="alerta alerta-info">
-    Usa <strong>entrada</strong> cuando llega una compra,
-    <strong>salida</strong> cuando se pierde o se usa algo fuera de un pedido, y
-    <strong>conteo</strong> cuando contaste lo que hay de verdad: escribis ese
-    numero y el sistema ajusta el stock solo. El descuento por los pedidos lo
-    hace el sistema.
+<p class="page-description">El descuento por los pedidos se hace automáticamente. Para los demás cambios, elegí qué pasó:</p>
+<div class="movement-choices" aria-label="Elegir tipo de movimiento">
+    <button type="button" class="movement-choice" data-tipo="entrada" aria-pressed="false">{% include 'components/icon.html' with nombre='plus' %}<strong>Llegó una compra</strong><span>Entrada: sumá lo que recibiste.</span></button>
+    <button type="button" class="movement-choice" data-tipo="salida" aria-pressed="false">{% include 'components/icon.html' with nombre='box' %}<strong>Se usó o se perdió algo</strong><span>Salida: descontá esa cantidad.</span></button>
+    <button type="button" class="movement-choice" data-tipo="conteo" aria-pressed="false">{% include 'components/icon.html' with nombre='check' %}<strong>Conté lo que hay</strong><span>Conteo: escribí la cantidad real.</span></button>
 </div>
 
 {% if form.errors %}
@@ -27,7 +26,7 @@
 
     <div class="form-actions">
         <a href="{% url 'inventario:ver_inventario' %}" class="btn btn-secondary">Cancelar</a>
-        <button type="submit" class="btn btn-primary">Registrar</button>
+        <button type="submit" class="btn btn-primary">Guardar movimiento</button>
     </div>
 </form>
 
@@ -54,6 +53,12 @@ function mostrarUnidad() {
     var ingrediente = INGREDIENTES[selectorIngrediente.value];
     var esConteo = selectorTipo.value === 'conteo';
 
+    document.querySelectorAll('.movement-choice').forEach(function (boton) {
+        var seleccionado = boton.dataset.tipo === selectorTipo.value;
+        boton.classList.toggle('is-selected', seleccionado);
+        boton.setAttribute('aria-pressed', String(seleccionado));
+    });
+
     filaPrecio.hidden = esConteo;
     etiquetaMotivo.textContent = esConteo ? 'Motivo (opcional):' : 'Motivo:';
 
@@ -77,6 +82,13 @@ function mostrarUnidad() {
 
 selectorIngrediente.addEventListener('change', mostrarUnidad);
 selectorTipo.addEventListener('change', mostrarUnidad);
+document.querySelectorAll('.movement-choice').forEach(function (boton) {
+    boton.addEventListener('click', function () {
+        selectorTipo.value = boton.dataset.tipo;
+        mostrarUnidad();
+        selectorIngrediente.focus();
+    });
+});
 
 // Tambien al cargar la pagina, por si vuelve con un ingrediente ya elegido
 // (cuando el formulario tenia errores).

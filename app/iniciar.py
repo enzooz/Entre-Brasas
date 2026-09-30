@@ -1,69 +1,113 @@
-"""
-Arranca Entre Brasas en la compu del cliente.
-
-Lo corre iniciar.bat (el acceso directo del escritorio). Hace, en orden:
-
-    1. Si el sistema ya esta abierto, solo abre el navegador y termina.
-    2. Hace una copia de seguridad de la base.
-    3. Aplica las migraciones pendientes (por si se instalo una version nueva).
-    4. Abre el navegador en la pantalla del sistema.
-    5. Levanta el servidor, que queda andando mientras la ventana este abierta.
-
-Usa waitress en vez de "runserver": runserver es para desarrollar, y
-waitress es un servidor pensado para dejar andando todo el dia.
-"""
+"""Arranque sin consola. El servidor se apaga desde la aplicación web."""
+import argparse
+from contextlib import contextmanager
+from pathlib import Path
 import os
 import socket
+import sys
 import threading
+import traceback
 import webbrowser
 
-# Esto tiene que ir antes de cargar Django: activa el modo local del
-# cliente en settings.py (datos aparte, DEBUG apagado, etc.).
-os.environ['ENTRE_BRASAS_PRODUCCION'] = '1'
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'entre_brasas.settings')
-
-import django  # noqa: E402
-from django.core.management import call_command  # noqa: E402
-
-PUERTO = 8765
-DIRECCION = f'http://127.0.0.1:{PUERTO}'
-
-
-def ya_esta_abierto():
-    """True si ya hay algo escuchando en el puerto del sistema."""
+def ya_esta_abierto(puerto):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as conexion:
-        return conexion.connect_ex(('127.0.0.1', PUERTO)) == 0
+        conexion.settimeout(1)
+        return conexion.connect_ex(('127.0.0.1', puerto)) == 0
+
+
+@contextmanager
+def bloquear_arranque(carpeta, puerto):
+    """Un doble clic no crea dos servidores ni migraciones simultáneas."""
+    import msvcrt
+    with (carpeta / f'arranque-{puerto}.lock').open('a+b') as archivo:
+        if archivo.tell() == 0:
+            archivo.write(b'0')
+            archivo.flush()
+        archivo.seek(0)
+        try:
+            msvcrt.locking(archivo.fileno(), msvcrt.LK_NBLCK, 1)
+        except OSError:
+            yield False
+            return
+        try:
+            yield True
+        finally:
+            archivo.seek(0)
+            msvcrt.locking(archivo.fileno(), msvcrt.LK_UNLCK, 1)
+
+
+def ejecutar_servidor(application, puerto, abrir_navegador=True):
+    from waitress import create_server, wasyncore
+    from entre_brasas import servidor_local
+    conexiones = {}
+    servidor = create_server(application, host='127.0.0.1', port=puerto, map=conexiones)
+    detener = threading.Event()
+    servidor_local.registrar(detener)
+    direccion = f'http://127.0.0.1:{servidor.effective_port}'
+    print(f'Entre Brasas disponible en {direccion}', flush=True)
+    if abrir_navegador:
+        webbrowser.open(direccion)
+    try:
+        while not detener.is_set():
+            wasyncore.loop(timeout=0.1, count=1, map=conexiones)
+    finally:
+        servidor.accepting = False
+        # Seguimos enviando respuestas mientras terminan las peticiones.
+        # No usamos taskkill ni detenemos otros procesos de Python.
+        limpieza = threading.Thread(target=servidor.task_dispatcher.shutdown, kwargs={'timeout': 30})
+        limpieza.start()
+        while limpieza.is_alive():
+            wasyncore.loop(timeout=0.1, count=1, map=conexiones)
+        wasyncore.loop(timeout=0.1, count=1, map=conexiones)
+        wasyncore.close_all(conexiones)
+        servidor_local.registrar(None)
+        print('Entre Brasas apagado.', flush=True)
 
 
 def main():
-    # Si el cliente le hace doble clic al icono con el sistema ya abierto,
-    # no se levanta un segundo servidor: se le abre otra pestania y listo.
-    if ya_esta_abierto():
-        webbrowser.open(DIRECCION)
+    parser = argparse.ArgumentParser(description='Entre Brasas en segundo plano')
+    parser.add_argument('--puerto', type=int, default=8765)
+    parser.add_argument('--sin-navegador', action='store_true')
+    parser.add_argument('--desarrollo', action='store_true', help='Usa la base del proyecto para la vista previa')
+    opciones = parser.parse_args()
+    if not 0 <= opciones.puerto <= 65535:
+        parser.error('El puerto debe estar entre 0 y 65535.')
+    os.environ['ENTRE_BRASAS_PRODUCCION'] = '0' if opciones.desarrollo else '1'
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'entre_brasas.settings')
+    if opciones.puerto and ya_esta_abierto(opciones.puerto):
+        if not opciones.sin_navegador:
+            webbrowser.open(f'http://127.0.0.1:{opciones.puerto}')
         return
-
-    django.setup()
-
-    call_command('respaldar')
-    call_command('migrate', verbosity=0)
-
-    # El navegador se abre un segundo despues, cuando el servidor ya arranco.
-    threading.Timer(1.5, webbrowser.open, args=[DIRECCION]).start()
-
-    print()
-    print('=' * 60)
-    print('  ENTRE BRASAS esta funcionando.')
-    print(f'  Direccion: {DIRECCION}')
-    print()
-    print('  Podes minimizar esta ventana, pero NO la cierres:')
-    print('  si la cerras, el sistema se apaga.')
-    print('=' * 60)
-    print()
-
-    from waitress import serve
-    from entre_brasas.wsgi import application
-
-    serve(application, host='127.0.0.1', port=PUERTO)
+    # pythonw no tiene stdout/stderr: registramos respaldos y errores.
+    carpeta = Path(__file__).resolve().parent if opciones.desarrollo else Path(os.environ['LOCALAPPDATA']) / 'EntreBrasas'
+    carpeta.mkdir(parents=True, exist_ok=True)
+    with bloquear_arranque(carpeta, opciones.puerto) as adquirido:
+        if not adquirido:
+            if not opciones.sin_navegador:
+                webbrowser.open(f'http://127.0.0.1:{opciones.puerto}')
+            return
+        with (carpeta / 'servidor.log').open('a', encoding='utf-8', buffering=1) as registro:
+            original_out, original_err = sys.stdout, sys.stderr
+            sys.stdout = sys.stderr = registro
+            try:
+                import django
+                from django.core.management import call_command
+                django.setup()
+                call_command('respaldar')
+                call_command('migrate', verbosity=0)
+                from entre_brasas.wsgi import application
+                ejecutar_servidor(application, opciones.puerto, not opciones.sin_navegador)
+            except Exception:
+                traceback.print_exc()
+                if not opciones.sin_navegador:
+                    import ctypes
+                    ctypes.windll.user32.MessageBoxW(
+                        None, f'No se pudo abrir Entre Brasas.\nEl detalle está en:\n{carpeta / "servidor.log"}',
+                        'Entre Brasas', 0x10,
+                    )
+                raise
+            finally:
+                sys.stdout, sys.stderr = original_out, original_err
 
 
 if __name__ == '__main__':

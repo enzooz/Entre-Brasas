@@ -4,7 +4,7 @@
 {% block encabezado %}Inventario{% endblock %}
 
 {% block contenido %}
-<a href="{% url 'inventario:registrar_movimiento' %}" class="btn btn-primary">Registrar movimiento</a>
+<div class="section-toolbar"><p>Ingredientes de las hamburguesas activas y sus adicionales. Actualizá las cantidades cuando recibís mercadería o contás la cocina.</p><a href="{% url 'inventario:registrar_movimiento' %}" class="btn btn-primary">{% include 'components/icon.html' with nombre='plus' %}Registrar movimiento</a></div>
 
 {# Aparece si hay ingredientes en 0 o en negativo: los pedidos nunca se #}
 {# frenan por stock, asi que el numero puede no ser real hasta que se cuente. #}
@@ -56,7 +56,7 @@
         </tr>
         {% empty %}
         <tr>
-            <td colspan="5">No hay ingredientes cargados.</td>
+            <td colspan="5">El menú activo todavía no tiene ingredientes asociados. Completá las <a href="{% url 'inventario:ver_recetas' %}">recetas</a> para ver su stock acá.</td>
         </tr>
         {% endfor %}
     </tbody>

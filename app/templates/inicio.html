@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block titulo %}Inicio · Entre Brasas{% endblock %}
+{% block encabezado %}Vamos a ponerle fuego al día.{% endblock %}
+{% block contenido %}
+<div class="dashboard-top">
+    <section class="start-panel" aria-labelledby="start-title">
+        <div class="start-panel-content">
+            <span class="start-icon">{% include 'components/icon.html' with nombre='ticket' %}</span>
+            <h2 id="start-title">Un pedido nuevo.<br>Todo listo para cocina.</h2>
+            <p>Cargalo a mano o pegá el mensaje de WhatsApp. El sistema te ayuda con el resto.</p>
+            <a href="{% url 'pedidos:crear_pedido' %}" class="btn btn-light">{% include 'components/icon.html' with nombre='plus' %}Tomar un pedido</a>
+        </div>
+        <div class="start-flow" aria-label="Flujo de un pedido"><span>Tomás el pedido</span><span>Preparás en cocina</span><span>Entregás y listo{% include 'components/icon.html' with nombre='check' %}</span></div>
+    </section>
+    <section class="today-panel" aria-labelledby="today-title">
+        <div class="section-heading"><h2 id="today-title">El local ahora</h2><span class="live-label"><span class="status-dot"></span>Datos reales</span></div>
+        <a href="{% url 'pedidos:cola_pedidos' %}" class="current-orders"><span class="stat-number">{{ resumen.total }}</span><span>pedido{{ resumen.total|pluralize }} en curso<small>Ver lo que está pasando en cocina</small></span>{% include 'components/icon.html' with nombre='arrow' %}</a>
+        <div class="state-breakdown"><div><span class="state-dot pending"></span><strong>{{ resumen.pendientes }}</strong><small>Pendientes</small></div><div><span class="state-dot cooking"></span><strong>{{ resumen.preparando }}</strong><small>En cocina</small></div><div><span class="state-dot delivery"></span><strong>{{ resumen.en_camino }}</strong><small>En camino</small></div></div>
+        <div class="today-sales"><span>Ventas de pedidos de hoy<small>{{ entregados_hoy }} entregado{{ entregados_hoy|pluralize }}</small></span><strong>${{ ventas_hoy }}</strong></div>
+    </section>
+</div>
+<section class="task-section" aria-labelledby="tasks-title">
+    <div class="section-heading"><div><h2 id="tasks-title">¿Qué necesitás hacer?</h2><p>Elegí una tarea y seguí desde ahí.</p></div></div>
+    <div class="task-grid">
+        <a href="{% url 'inventario:ver_inventario' %}" class="task-card"><span class="task-icon stock-icon">{% include 'components/icon.html' with nombre='box' %}</span><h3>Controlar el stock</h3><p>Revisá insumos y registrá lo que entra, sale o contaste en cocina.</p><span class="task-foot">{% if faltantes_count %}<span class="attention-label">{{ faltantes_count }} para revisar</span>{% else %}<span>Ver inventario</span>{% endif %}{% include 'components/icon.html' with nombre='arrow' %}</span></a>
+        <a href="{% url 'menu:listar_hamburguesas' %}" class="task-card"><span class="task-icon menu-icon">{% include 'components/icon.html' with nombre='burger' %}</span><h3>Organizar el menú</h3><p>Actualizá hamburguesas, precios y adicionales que ofrecés en el local.</p><span class="task-foot"><span>{{ productos_activos }} hamburguesa{{ productos_activos|pluralize }} activa{{ productos_activos|pluralize }}</span>{% include 'components/icon.html' with nombre='arrow' %}</span></a>
+        <a href="{% url 'reportes:reportes_ventas' %}" class="task-card"><span class="task-icon report-icon">{% include 'components/icon.html' with nombre='chart' %}</span><h3>Ver cómo va el negocio</h3><p>Consultá ventas y productos más pedidos. Después, revisá tus ganancias.</p><span class="task-foot"><span>Ver ventas y reportes</span>{% include 'components/icon.html' with nombre='arrow' %}</span></a>
+    </div>
+</section>
+<div class="dashboard-bottom">
+    <section class="activity-panel" aria-labelledby="activity-title">
+        <div class="section-heading"><h2 id="activity-title">Pedidos en curso</h2><a href="{% url 'pedidos:cola_pedidos' %}" class="text-link">Ver todos{% include 'components/icon.html' with nombre='arrow' %}</a></div>
+        {% for pedido in pedidos_recientes %}
+        <a href="{% url 'pedidos:detalle_pedido' pedido.pk %}" class="activity-row"><span class="order-number">#{{ pedido.pk }}</span><span class="activity-client"><strong>{{ pedido.cliente_nombre }}</strong><small>{{ pedido.fecha_creacion|date:'H:i' }} · {% if pedido.retiro_local %}Retira en el local{% else %}Envío a domicilio{% endif %}</small></span><span class="badge badge-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span>{% include 'components/icon.html' with nombre='chevron' %}</a>
+        {% empty %}
+        <div class="activity-empty">{% include 'components/icon.html' with nombre='check' %}<h3>Todo al día por acá.</h3><p>Cuando cargues un pedido, vas a poder seguirlo desde este lugar.</p><a href="{% url 'pedidos:crear_pedido' %}" class="text-link">Cargar el primer pedido{% include 'components/icon.html' with nombre='arrow' %}</a></div>
+        {% endfor %}
+    </section>
+    <section class="guide-panel" id="guia" aria-labelledby="guide-title">
+        <div class="section-heading"><h2 id="guide-title">Cada cosa en su lugar</h2>{% include 'components/icon.html' with nombre='book' %}</div>
+        <a href="{% url 'inventario:registrar_movimiento' %}" class="guide-row"><span><strong>¿Llegó una compra?</strong><small>Registrá una entrada al inventario.</small></span>{% include 'components/icon.html' with nombre='chevron' %}</a>
+        <a href="{% url 'inventario:ver_recetas' %}" class="guide-row"><span><strong>¿Qué lleva cada hamburguesa?</strong><small>Cargá sus ingredientes en Recetas.</small></span>{% include 'components/icon.html' with nombre='chevron' %}</a>
+        <a href="{% url 'config:panel_config' %}" class="guide-row"><span><strong>¿Cambió el costo del envío?</strong><small>Ajustá las tarifas en Configuración.</small></span>{% include 'components/icon.html' with nombre='chevron' %}</a>
+    </section>
+</div>
+{% if faltantes_count %}
+<aside class="stock-notice">{% include 'components/icon.html' with nombre='alert' %}<p><strong>Antes de la próxima tanda, revisá el stock.</strong> {{ faltantes_count }} ingrediente{{ faltantes_count|pluralize }} por debajo del mínimo: {% for ingrediente in faltantes_inicio %}{{ ingrediente.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if faltantes_count > 3 %} y otros{% endif %}.</p><a href="{% url 'inventario:ver_inventario' %}" class="text-link">Revisar inventario{% include 'components/icon.html' with nombre='arrow' %}</a></aside>
+{% endif %}
+{% endblock %}

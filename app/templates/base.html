@@ -1,54 +1,71 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block titulo %}Entre Brasas{% endblock %}</title>
-    <link rel="stylesheet" href="/static/css/estilo.css">
-    {# El logo en la pestania del navegador. Es el mismo del icono del escritorio. #}
-    <link rel="icon" href="/static/img/entre-brasas.ico">
+    <link rel="stylesheet" href="{% static 'css/estilo.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sistema.css' %}">
+    <link rel="icon" href="{% static 'img/entre-brasas.ico' %}">
+    <script src="{% static 'js/interfaz.js' %}" defer></script>
+    <script src="{% static 'js/estado-sistema.js' %}" defer></script>
+    <script src="{% static 'js/borrador-pedido.js' %}" defer></script>
 </head>
-<body>
-    {# Esta es la pantalla "madre": todas las demas la extienden y solo #}
-    {# completan los bloques. Asi el menu y el encabezado se escriben #}
-    {# una sola vez para todo el sistema. #}
-
-    <nav>
-        <div class="logo">
-            <h2>Entre Brasas</h2>
-        </div>
-        <ul>
-            <li><a href="{% url 'pedidos:crear_pedido' %}">Nuevo Pedido</a></li>
-            <li><a href="{% url 'pedidos:cola_pedidos' %}">Cola de Pedidos</a></li>
-            <li><a href="{% url 'pedidos:historial_pedidos' %}">Historial</a></li>
-            <li><a href="{% url 'menu:listar_hamburguesas' %}">Hamburguesas</a></li>
-            <li><a href="{% url 'menu:listar_adicionales' %}">Adicionales</a></li>
-            <li><a href="{% url 'inventario:ver_inventario' %}">Inventario</a></li>
-            <li><a href="{% url 'inventario:listar_ingredientes' %}">Ingredientes</a></li>
-            <li><a href="{% url 'inventario:ver_recetas' %}">Recetas</a></li>
-            <li><a href="{% url 'reportes:reportes_ventas' %}">Reportes</a></li>
-            <li><a href="{% url 'costos:ver_costos' %}">Costos</a></li>
-            <li><a href="{% url 'config:panel_config' %}">Configuracion</a></li>
-        </ul>
-    </nav>
-
-    <main>
-        <header>
-            <h1>{% block encabezado %}{% endblock %}</h1>
-        </header>
-
-        {# Los avisos que mandan las vistas con messages.success(...) #}
-        {% if messages %}
-        <div class="mensajes">
-            {% for mensaje in messages %}
-            <div class="alerta alerta-{{ mensaje.tags }}">{{ mensaje }}</div>
+<body data-page="{{ page_key }}" data-system-instance="{{ estado_sistema.instancia }}" data-system-status-url="{% url 'estado_sistema' %}"{% if estado_sistema.apagando %} class="system-off" data-system-off="true"{% endif %}>
+    <a href="#contenido" class="skip-link">Ir al contenido</a>
+    <nav class="sidebar" id="navegacion" aria-label="Navegación principal"{% if estado_sistema.apagando %} inert{% endif %}>
+        <a class="brand" href="{% url 'inicio' %}" aria-label="Entre Brasas, inicio">
+            <span class="brand-mark">{% include 'components/icon.html' with nombre='flame' %}</span>
+            <span><strong>Entre Brasas<span class="brand-dot">.</span></strong><small>El local, bajo control</small></span>
+        </a>
+        <div class="nav-groups">
+            {% for grupo in nav_grupos %}
+            <div class="nav-group">
+                <p class="nav-group-title">{{ grupo.nombre }}</p>
+                <ul>
+                    {% for link in grupo.links %}
+                    <li><a href="{{ link.url }}" class="nav-link{% if link.activo %} is-active{% endif %}"{% if link.activo %} aria-current="page"{% endif %}>
+                        {% include 'components/icon.html' with nombre=link.icono %}<span>{{ link.nombre }}</span>
+                    </a></li>
+                    {% endfor %}
+                </ul>
+            </div>
             {% endfor %}
         </div>
+        <a href="{% url 'inicio' %}#guia" class="sidebar-help">{% include 'components/icon.html' with nombre='help' %}<span>¿Por dónde empiezo?<small>Una guía para cada tarea</small></span></a>
+        {% if puede_apagar_sistema %}
+        <a href="{% url 'apagar_sistema' %}" class="sidebar-shutdown">{% include 'components/icon.html' with nombre='power' %}<span>Apagar sistema</span></a>
         {% endif %}
-
-        <div class="contenido">
-            {% block contenido %}{% endblock %}
+        <div class="sidebar-footer"><span class="status-dot"></span> Sistema del local</div>
+    </nav>
+    <button class="nav-scrim" type="button" tabindex="-1" aria-label="Cerrar menú" hidden></button>
+    <main class="app-main"{% if estado_sistema.apagando %} inert{% endif %}>
+        <div class="topbar">
+            <button class="menu-toggle" type="button" aria-controls="navegacion" aria-expanded="false" aria-label="Abrir menú">{% include 'components/icon.html' with nombre='menu' %}</button>
+            <div class="breadcrumb"><a href="{% url 'inicio' %}">Entre Brasas</a>{% include 'components/icon.html' with nombre='chevron' %}<span>{{ page_group }}</span></div>
+            <div class="topbar-date">{% now 'l, j \d\e F' %}</div>
+            <a class="topbar-action" href="{% url 'pedidos:crear_pedido' %}">{% include 'components/icon.html' with nombre='plus' %}<span>Nuevo pedido</span></a>
         </div>
+        <header class="page-header">
+            <div><h1>{% block encabezado %}{% endblock %}</h1><p class="page-description">{{ page_description }}</p></div>
+            {% block header_actions %}{% endblock %}
+        </header>
+        {% if messages %}
+        <div class="mensajes" aria-live="polite">
+            {% for mensaje in messages %}<div class="alerta alerta-{{ mensaje.tags }}" role="{% if mensaje.tags == 'error' %}alert{% else %}status{% endif %}">{{ mensaje }}</div>{% endfor %}
+        </div>
+        {% endif %}
+        <div class="contenido" id="contenido" tabindex="-1">{% block contenido %}{% endblock %}</div>
+        <footer class="app-footer"><span>Entre Brasas</span><span>Menos vueltas. Más pedidos.</span></footer>
     </main>
+    <section class="system-off-notice" id="system-off-notice" role="status" aria-live="polite" aria-atomic="true" tabindex="-1"{% if not estado_sistema.apagando %} hidden{% endif %}>
+        {% include 'components/icon.html' with nombre='power' %}
+        <div>
+            <h2 id="system-off-title">Sistema apagado</h2>
+            <p id="system-off-message">Las pantallas están bloqueadas. Los datos guardados se conservan. Para volver a trabajar, abrí Entre Brasas desde el icono del escritorio.</p>
+            <button type="button" class="btn btn-secondary" id="system-reconnect" disabled>Esperando que abras el sistema…</button>
+        </div>
+    </section>
 </body>
 </html>

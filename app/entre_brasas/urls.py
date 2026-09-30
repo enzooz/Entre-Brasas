@@ -15,6 +15,8 @@ from . import views
 urlpatterns = [
     # La direccion raiz del sitio (entrar a "/" a secas).
     path('', views.inicio, name='inicio'),
+    path('sistema/apagar/', views.apagar_sistema, name='apagar_sistema'),
+    path('sistema/estado/', views.estado_sistema, name='estado_sistema'),
 
     path('pedidos/', include('pedidos.urls')),
     path('menu/', include('menu.urls')),

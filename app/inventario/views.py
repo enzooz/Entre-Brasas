@@ -13,7 +13,7 @@ from django.urls import reverse
 
 from menu.models import Hamburguesa, Adicional
 
-from .models import Ingrediente, MovimientoInventario, Receta, formatear_cantidad
+from .models import Ingrediente, MovimientoInventario, Receta, formatear_cantidad, ingredientes_del_menu_activo
 from .forms import IngredienteForm, MovimientoForm, RecetaForm
 
 
@@ -22,7 +22,7 @@ def ver_inventario(request):
     Pantalla principal del inventario: el stock de cada insumo y cuales
     hay que reponer.
     """
-    ingredientes = Ingrediente.objects.filter(activo=True)
+    ingredientes = ingredientes_del_menu_activo()
 
     # Armamos la lista de los que estan por debajo del minimo.
     # stock_bajo es la property que definimos en el modelo: compara el stock
@@ -108,7 +108,7 @@ def registrar_movimiento(request):
         'form': form,
         # Para mostrar la unidad (kg, L, etc.) al lado de la cantidad
         # cuando se elige el ingrediente.
-        'ingredientes': Ingrediente.objects.all(),
+        'ingredientes': ingredientes_del_menu_activo(),
     })
 
 

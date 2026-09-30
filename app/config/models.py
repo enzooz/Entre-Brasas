@@ -9,18 +9,23 @@ Hay una sola fila de configuracion en toda la base (la fila numero 1).
 No tendria sentido tener varias "configuraciones del sistema".
 """
 from django.db import models
+from django.core.validators import MinValueValidator
 
 
 class Configuracion(models.Model):
     """Los parametros generales del sistema."""
 
-    # Cuanto se cobra por cada kilometro de distancia.
-    tarifa_km = models.PositiveIntegerField(default=500)
+    # Precio de 0,1 km (100 metros). Admite centavos para convertir tarifas
+    # anteriores sin cambiar el importe que se venia cobrando.
+    tarifa_100m = models.DecimalField(
+        max_digits=10, decimal_places=2, default=50,
+        validators=[MinValueValidator(0)], verbose_name='Tarifa por cada 100 metros ($)',
+    )
 
     # Hasta esta distancia no se cobra envio (es "a la vuelta").
     distancia_minima = models.DecimalField(max_digits=5, decimal_places=2, default=1)
 
-    # El envio nunca puede salir menos que esto.
+    # Importe base: se suma a la tarifa por distancia cuando el envio no es gratis.
     costo_minimo_envio = models.PositiveIntegerField(default=1000)
 
     # Se usa para calcular cuanto cuesta preparar cada hamburguesa.

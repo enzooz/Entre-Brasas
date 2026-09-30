@@ -1,8 +1,8 @@
 @echo off
-rem Abre Entre Brasas. Es lo que ejecuta el icono del escritorio.
+rem Abre Entre Brasas sin mantener una consola abierta.
 rem Todo el trabajo lo hace app\iniciar.py.
 
-title Entre Brasas - no cerrar esta ventana
+title Entre Brasas
 cd /d "%~dp0app"
 
 if not exist venv\Scripts\python.exe (
@@ -13,12 +13,5 @@ if not exist venv\Scripts\python.exe (
     exit /b 1
 )
 
-venv\Scripts\python.exe iniciar.py
-
-if errorlevel 1 (
-    echo.
-    echo El sistema se cerro por un error. Sacale una foto a esta pantalla
-    echo y mandasela a quien te instalo el sistema.
-    echo.
-    pause
-)
+start "" "venv\Scripts\pythonw.exe" "iniciar.py"
+exit /b

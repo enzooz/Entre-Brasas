@@ -9,15 +9,27 @@
 {# Si retira, alcanza con el nombre. Al crear, el sistema arma la comanda. #}
 <form method="POST" id="formPedido">
     {% csrf_token %}
+    <input type="hidden" name="borrador_token" id="borradorToken">
+    <div class="draft-notice" id="borradorAviso" hidden>
+        <div><strong id="borradorEstado" role="status" aria-live="polite"></strong><p id="borradorAyuda">Podés ir a otra sección y volver en esta pestaña. Todavía no es un pedido creado.</p></div>
+        <button type="button" class="btn btn-secondary" id="descartarBorrador">Descartar borrador</button>
+    </div>
+
+    <div class="order-steps" aria-label="Pasos para cargar el pedido">
+        <a href="#paso-cliente"><span>1</span>Cliente</a>
+        <a href="#paso-productos"><span>2</span>Hamburguesas</a>
+        <a href="#paso-entrega"><span>3</span>Entrega y pago</a>
+        <a href="#paso-resumen"><span>4</span>Confirmar</a>
+    </div>
 
     {# Atajo para lo que llega por WhatsApp: se pega el mensaje del cliente y #}
     {# el formulario se completa solo (ver pedidos/interpretar.py). No guarda  #}
     {# nada: despues se revisa y se toca "Crear pedido" como siempre.          #}
-    <div class="card card-pegar">
-        <h2>Pegar mensaje de WhatsApp</h2>
+    <details class="card-pegar">
+        <summary>¿El pedido llegó por WhatsApp?<small>Pegá el mensaje y completá los datos más rápido.</small></summary>
         <p>
             <label for="mensajeWhatsapp">Copia el mensaje del cliente y pegalo aca</label>
-            <textarea id="mensajeWhatsapp" class="form-control" rows="4" autofocus
+            <textarea id="mensajeWhatsapp" class="form-control" rows="4"
                       placeholder="Agostina&#10;1 pepi&#10;1 crispy doble&#10;Retira"></textarea>
         </p>
         <div class="acciones-pegar">
@@ -27,14 +39,16 @@
             <small>o Ctrl + Enter</small>
         </div>
         <div id="resultadoMensaje" class="resultado-mensaje" hidden></div>
-    </div>
+    </details>
 
-    <div class="card">
-        <h2>Cliente</h2>
+    <div class="order-layout">
+    <div class="order-fields">
+    <div class="card" id="paso-cliente">
+        <h2>1. ¿Para quién es?</h2>
         <p>
-            <label for="clienteNombre">Nombre *</label>
+            <label for="clienteNombre">Nombre del cliente *</label>
             <input type="text" name="cliente_nombre" id="clienteNombre" class="form-control"
-                   required autocomplete="off">
+                   required autocomplete="off" placeholder="Ej.: Agostina">
         </p>
         <p>
             <label for="observaciones">Observaciones del pedido</label>
@@ -43,8 +57,9 @@
         </p>
     </div>
 
-    <div class="card">
-        <h2>Hamburguesas</h2>
+    <div class="card" id="paso-productos">
+        <h2>2. Elegí las hamburguesas</h2>
+        <p class="page-description">Cada toque agrega una hamburguesa. Personalizá los extras y la nota de cada unidad por separado.</p>
 
         {# Un boton por hamburguesa. Cada clic agrega una fila abajo. #}
         <div class="menu-botones">
@@ -54,20 +69,21 @@
                     data-nombre="{{ hamburguesa.nombre }}"
                     data-precio="{{ hamburguesa.precio }}"
                     onclick="agregarHamburguesa(this)">
+                {% include 'components/icon.html' with nombre='plus' clase='menu-add' %}
                 <span class="boton-menu-nombre">{{ hamburguesa.nombre }}</span>
                 <span class="boton-menu-precio">${{ hamburguesa.precio }}</span>
             </button>
             {% empty %}
-            <p>No hay hamburguesas activas. Cargalas en la seccion Hamburguesas.</p>
+            <p>No hay hamburguesas activas. <a href="{% url 'menu:crear_hamburguesa' %}">Agregá una hamburguesa al menú</a> para tomar pedidos.</p>
             {% endfor %}
         </div>
 
         <div id="listaProductos"></div>
-        <p id="sinProductos" class="sin-productos">Toca una hamburguesa para agregarla al pedido.</p>
+        <p id="sinProductos" class="sin-productos" tabindex="-1" aria-live="polite">Tocá una hamburguesa para agregarla al pedido.</p>
     </div>
 
-    <div class="card">
-        <h2>Entrega *</h2>
+    <div class="card" id="paso-entrega">
+        <h2>3. ¿Cómo lo recibe? *</h2>
         <div class="selector-opciones selector-grande">
             <label class="opcion">
                 <input type="radio" name="retiro_local" value="true" required onchange="cambiarEntrega()">
@@ -75,7 +91,7 @@
             </label>
             <label class="opcion">
                 <input type="radio" name="retiro_local" value="false" onchange="cambiarEntrega()">
-                <span>Envio a domicilio</span>
+                <span>Envío a domicilio</span>
             </label>
         </div>
 
@@ -95,13 +111,14 @@
             <p>
                 <label for="distancia">Distancia (km) *</label>
                 <input type="number" name="distancia_km" id="distancia" class="form-control"
-                       min="0" step="0.1" oninput="calcularTotal()">
+                       min="0" max="999.9" step="0.1" oninput="calcularTotal()" aria-describedby="ayudaDistancia">
+                <small id="ayudaDistancia">Usá como máximo un decimal: 0,1 = 100 metros; 5,4 = 5 km y 400 metros. No se redondean a kilómetros enteros.</small>
             </p>
         </div>
     </div>
 
     <div class="card">
-        <h2>Pago</h2>
+        <h2>¿Cómo paga?</h2>
         <div class="selector-opciones">
             <label class="opcion">
                 <input type="radio" name="metodo_pago" value="efectivo" checked>
@@ -114,50 +131,53 @@
         </div>
     </div>
 
-    <div class="card">
-        <h2>Resumen</h2>
+    </div>
+    <aside class="order-summary" id="paso-resumen" aria-label="Resumen del pedido">
+        <h2>Tu pedido</h2>
+        <p id="resumenCliente" class="summary-client">Todavía no elegiste un cliente.</p>
+        <p id="resumenCantidad" class="page-description">Agregá una hamburguesa para empezar.</p>
         <div class="cost-summary">
             <p>Hamburguesas: $<span id="totalHamburguesas">0</span></p>
             <p>Adicionales: $<span id="totalAdicionales">0</span></p>
-            <p>Envio: $<span id="totalEnvio">0</span></p>
-            <p class="total-highlight">TOTAL: $<span id="totalGeneral">0</span></p>
+            <p>Envío: $<span id="totalEnvio">0</span></p>
+            <p class="total-highlight">Total: $<span id="totalGeneral" aria-live="polite">0</span></p>
         </div>
-        <p><small>El total definitivo lo calcula el servidor al guardar el pedido.</small></p>
-    </div>
+        <p class="summary-hint" id="siguientePaso" aria-live="polite">Empezá por el nombre del cliente.</p>
+        <small>Al crear el pedido, la comanda queda lista para compartir con cocina.</small>
 
     <div class="form-actions">
-        <a href="{% url 'pedidos:cola_pedidos' %}" class="btn btn-secondary">Cancelar</a>
+        <a href="{% url 'pedidos:cola_pedidos' %}" class="btn btn-secondary">Volver a pedidos</a>
         <button type="submit" class="btn btn-primary">Crear pedido</button>
+    </div>
+    </aside>
     </div>
 </form>
 
 {# La fila que se copia cada vez que se toca una hamburguesa. Las "N" se #}
 {# reemplazan por el numero de fila, asi cada fila tiene sus propios campos. #}
 <template id="plantillaFila">
-    <div class="fila-producto">
+    <div class="fila-producto" role="group" aria-labelledby="nombre_N unidad_N">
         <input type="hidden" name="filas[]" value="N">
         <input type="hidden" name="hamburguesa_N" class="campo-hamburguesa">
 
         <div class="fila-encabezado">
-            <strong class="fila-nombre"></strong>
-            <div class="contador">
-                <button type="button" class="boton-contador" onclick="cambiarCantidad(this, -1)" aria-label="Una menos">&minus;</button>
-                <input type="number" name="cantidad_N" class="cantidad" value="1" min="1" oninput="calcularTotal()" aria-label="Cantidad">
-                <button type="button" class="boton-contador" onclick="cambiarCantidad(this, 1)" aria-label="Una mas">+</button>
-            </div>
+            <strong class="fila-nombre" id="nombre_N"></strong>
+            <span class="fila-unidad" id="unidad_N"></span>
+            <input type="hidden" name="cantidad_N" class="cantidad" value="1">
             <button type="button" class="boton-quitar" onclick="quitarFila(this)">Quitar</button>
         </div>
 
-        <div class="selector-opciones selector-medallones" hidden>
-            <label class="opcion"><input type="radio" name="medallones_N" value="0" checked onchange="calcularTotal()"><span>Simple</span></label>
-            <label class="opcion"><input type="radio" name="medallones_N" value="1" onchange="calcularTotal()"><span>Doble</span></label>
-            <label class="opcion"><input type="radio" name="medallones_N" value="2" onchange="calcularTotal()"><span>Triple</span></label>
+        <div class="selector-opciones selector-medallones" role="group" aria-label="Medallones extra para esta unidad" hidden>
+            <label class="opcion"><input type="radio" name="medallones_N" value="0" checked onchange="calcularTotal()"><span>Sin medallón extra</span></label>
+            <label class="opcion"><input type="radio" name="medallones_N" value="1" onchange="calcularTotal()"><span class="precio-medallon-uno"></span></label>
+            <label class="opcion"><input type="radio" name="medallones_N" value="2" onchange="calcularTotal()"><span class="precio-medallon-dos"></span></label>
         </div>
 
         <div class="chips-adicionales"></div>
 
-        <input type="text" name="nota_N" class="form-control campo-nota"
-               placeholder="Nota para cocina (ej: dip de alioli, sin cebolla)" autocomplete="off">
+        <label for="nota_N" class="etiqueta-nota">Nota para cocina de esta unidad (opcional)</label>
+        <input type="text" name="nota_N" id="nota_N" class="form-control campo-nota" maxlength="200"
+               placeholder="Ej.: sin cebolla, dip de alioli" autocomplete="off">
     </div>
 </template>
 
@@ -172,37 +192,20 @@ var DATOS = JSON.parse(document.getElementById('datosFormulario').textContent);
 var proximaFila = 0;
 
 
-// Agrega una hamburguesa al pedido. Si ya hay una fila de esa hamburguesa
-// que no se toco (simple, sin adicionales ni nota), le suma 1 en vez de
-// agregar otra fila. Si se toco, agrega una fila nueva: asi "1 crispy
-// doble + 1 crispy simple" quedan separadas.
+// Cada clic crea una unidad independiente, incluso si es el mismo producto.
 function agregarHamburguesa(boton) {
-    var id = parseInt(boton.dataset.id);
-
-    var filas = document.querySelectorAll('.fila-producto');
-    for (var i = 0; i < filas.length; i++) {
-        if (parseInt(filas[i].dataset.hamburguesa) === id && filaSinCambios(filas[i])) {
-            var cantidad = filas[i].querySelector('.cantidad');
-            cantidad.value = parseInt(cantidad.value) + 1;
-            calcularTotal();
-            return;
-        }
-    }
-
-    crearFila(id, boton.dataset.nombre, parseInt(boton.dataset.precio));
-}
-
-
-function filaSinCambios(fila) {
-    var medallones = fila.querySelector('.selector-medallones input:checked');
-    var adicionalesMarcados = fila.querySelectorAll('.chips-adicionales input:checked');
-    var nota = fila.querySelector('.campo-nota').value.trim();
-
-    return (!medallones || medallones.value === '0') && adicionalesMarcados.length === 0 && nota === '';
+    crearFila(parseInt(boton.dataset.id), boton.dataset.nombre, parseInt(boton.dataset.precio));
 }
 
 
 function crearFila(id, nombre, precio) {
+    if (document.querySelectorAll('.fila-producto').length >= 100) {
+        var aviso = document.getElementById('sinProductos');
+        aviso.hidden = false;
+        aviso.textContent = 'El pedido admite hasta 100 hamburguesas. Creá otro pedido para agregar más.';
+        aviso.focus();
+        return null;
+    }
     var numero = proximaFila;
     proximaFila = proximaFila + 1;
 
@@ -217,10 +220,12 @@ function crearFila(id, nombre, precio) {
     fila.querySelector('.campo-hamburguesa').value = id;
     fila.querySelector('.fila-nombre').textContent = nombre + ' ($' + precio + ')';
 
-    // El selector Simple / Doble / Triple, si esta hamburguesa admite medallon extra.
+    // No llamamos "simple" a una Sagrada que ya incluye tres medallones.
     var medallon = DATOS.medallon_extra;
     if (medallon && medallon.hamburguesas.indexOf(id) !== -1) {
         fila.querySelector('.selector-medallones').hidden = false;
+        fila.querySelector('.precio-medallon-uno').textContent = '+ 1 medallón $' + medallon.precio;
+        fila.querySelector('.precio-medallon-dos').textContent = '+ 2 medallones $' + medallon.precio * 2;
     }
 
     // Una casilla por cada adicional que se ofrece en esta hamburguesa.
@@ -251,19 +256,23 @@ function crearFila(id, nombre, precio) {
     }
 
     document.getElementById('listaProductos').appendChild(fila);
+    numerarUnidades();
     calcularTotal();
+    return fila;
 }
 
 
-function cambiarCantidad(boton, cambio) {
-    var campo = boton.parentNode.querySelector('.cantidad');
-    campo.value = Math.max(1, (parseInt(campo.value) || 1) + cambio);
-    calcularTotal();
+function numerarUnidades() {
+    document.querySelectorAll('.fila-producto').forEach(function (fila, indice) {
+        fila.querySelector('.fila-unidad').textContent = 'Unidad ' + (indice + 1);
+        fila.querySelector('.boton-quitar').setAttribute('aria-label', 'Quitar unidad ' + (indice + 1));
+    });
 }
 
 
 function quitarFila(boton) {
     boton.closest('.fila-producto').remove();
+    numerarUnidades();
     calcularTotal();
 }
 
@@ -327,8 +336,12 @@ function calcularTotal() {
     if (elegido && elegido.value === 'false') {
         var distancia = parseFloat(document.getElementById('distancia').value) || 0;
 
-        if (distancia >= DATOS.distancia_minima) {
-            costoEnvio = Math.max(distancia * DATOS.tarifa_km, DATOS.costo_minimo_envio);
+        if (distancia >= DATOS.distancia_minima && distancia <= 999.9 && distancia === Math.round(distancia * 10) / 10) {
+            // Metros exactos, sin aproximar la distancia a un km entero.
+            // Trabajamos con centavos para evitar errores de coma flotante.
+            var metros = Math.round(distancia * 1000);
+            var tarifaCentavos = Math.round(parseFloat(DATOS.tarifa_100m) * 100);
+            costoEnvio = Number(DATOS.costo_minimo_envio) + metros * tarifaCentavos / 10000;
         }
     }
 
@@ -338,7 +351,28 @@ function calcularTotal() {
     document.getElementById('totalAdicionales').textContent = totalAdicionales;
     document.getElementById('totalEnvio').textContent = costoEnvio;
     document.getElementById('totalGeneral').textContent = totalHamburguesas + totalAdicionales + costoEnvio;
+    actualizarResumen();
+    document.dispatchEvent(new Event('pedido:actualizado'));
 }
+
+function actualizarResumen() {
+    var nombre = document.getElementById('clienteNombre').value.trim();
+    var cantidad = 0;
+    document.querySelectorAll('.fila-producto .cantidad').forEach(function (input) {
+        cantidad += Math.max(0, parseInt(input.value) || 0);
+    });
+    document.getElementById('resumenCliente').textContent = nombre ? 'Para ' + nombre : 'Todavía no elegiste un cliente.';
+    document.getElementById('resumenCantidad').textContent = cantidad ? cantidad + (cantidad === 1 ? ' hamburguesa en el pedido' : ' hamburguesas en el pedido') : 'Agregá una hamburguesa para empezar.';
+    var entrega = document.querySelector('input[name="retiro_local"]:checked');
+    var paso = 'Todo listo. Revisá el total y creá el pedido.';
+    if (!nombre) paso = 'Empezá por el nombre del cliente.';
+    else if (!cantidad) paso = 'Ahora elegí las hamburguesas del pedido.';
+    else if (!entrega) paso = 'Elegí si retira en el local o necesita envío.';
+    else if (entrega.value === 'false' && (!document.getElementById('clienteDireccion').value.trim() || !document.getElementById('clienteTelefono').value.trim() || !document.getElementById('distancia').value)) paso = 'Completá dirección, teléfono y distancia del envío.';
+    document.getElementById('siguientePaso').textContent = paso;
+}
+document.getElementById('formPedido').addEventListener('input', actualizarResumen);
+document.getElementById('formPedido').addEventListener('change', actualizarResumen);
 
 
 // ---------- Pegar mensaje de WhatsApp ----------
@@ -352,16 +386,29 @@ function completarDesdeMensaje() {
         return;
     }
 
+    var botonCompletar = document.getElementById('botonCompletar');
+    botonCompletar.disabled = true;
+    botonCompletar.textContent = 'Leyendo mensaje…';
+    botonCompletar.setAttribute('aria-busy', 'true');
+
     var datos = new FormData();
     datos.append('mensaje', mensaje);
     // Django pide el token de seguridad tambien en estos pedidos.
     datos.append('csrfmiddlewaretoken', document.querySelector('[name="csrfmiddlewaretoken"]').value);
 
     fetch('{% url "pedidos:interpretar_mensaje" %}', { method: 'POST', body: datos })
-        .then(function (respuesta) { return respuesta.json(); })
+        .then(function (respuesta) {
+            if (!respuesta.ok) throw new Error('No se pudo interpretar el mensaje');
+            return respuesta.json();
+        })
         .then(completarFormulario)
         .catch(function () {
             mostrarResultado('No se pudo leer el mensaje. Carga el pedido a mano.', true);
+        })
+        .finally(function () {
+            botonCompletar.disabled = false;
+            botonCompletar.textContent = 'Completar el pedido';
+            botonCompletar.removeAttribute('aria-busy');
         });
 }
 
@@ -397,22 +444,18 @@ function completarFormulario(pedido) {
             continue;
         }
 
-        crearFila(item.hamburguesa_id, boton.dataset.nombre, parseInt(boton.dataset.precio));
-        var filas = document.querySelectorAll('.fila-producto');
-        var fila = filas[filas.length - 1];
+        // Una fila por unidad también al pegar cantidades desde WhatsApp.
+        for (var unidad = 0; unidad < item.cantidad; unidad++) {
+            var fila = crearFila(item.hamburguesa_id, boton.dataset.nombre, parseInt(boton.dataset.precio));
+            if (!fila) break;
+            fila.querySelector('.campo-nota').value = item.nota;
 
-        fila.querySelector('.cantidad').value = item.cantidad;
-        fila.querySelector('.campo-nota').value = item.nota;
+            var medallones = fila.querySelector('.selector-medallones input[value="' + item.medallones + '"]');
+            if (medallones) medallones.checked = true;
 
-        var medallones = fila.querySelector('.selector-medallones input[value="' + item.medallones + '"]');
-        if (medallones) {
-            medallones.checked = true;
-        }
-
-        for (var j = 0; j < item.adicionales.length; j++) {
-            var casilla = fila.querySelector('.chips-adicionales input[value="' + item.adicionales[j] + '"]');
-            if (casilla) {
-                casilla.checked = true;
+            for (var j = 0; j < item.adicionales.length; j++) {
+                var casilla = fila.querySelector('.chips-adicionales input[value="' + item.adicionales[j] + '"]');
+                if (casilla) casilla.checked = true;
             }
         }
     }
@@ -499,7 +542,10 @@ formulario.addEventListener('keydown', function (evento) {
 formulario.addEventListener('submit', function (evento) {
     if (document.querySelectorAll('.fila-producto').length === 0) {
         evento.preventDefault();
-        alert('Agrega al menos una hamburguesa al pedido.');
+        var aviso = document.getElementById('sinProductos');
+        aviso.textContent = 'Agregá al menos una hamburguesa para crear el pedido.';
+        aviso.classList.add('stock-negativo');
+        aviso.focus();
     }
 });
 </script>

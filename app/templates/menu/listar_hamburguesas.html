@@ -4,7 +4,7 @@
 {% block encabezado %}Hamburguesas{% endblock %}
 
 {% block contenido %}
-<a href="{% url 'menu:crear_hamburguesa' %}" class="btn btn-primary">+ Nueva hamburguesa</a>
+<div class="section-toolbar"><p>Solo las hamburguesas activas del menú. Las desactivadas se conservan en el historial.</p><a href="{% url 'menu:crear_hamburguesa' %}" class="btn btn-primary">{% include 'components/icon.html' with nombre='plus' %}Nueva hamburguesa</a></div>
 
 <table>
     <thead>
@@ -26,23 +26,19 @@
             <td>${{ hamburguesa.precio }}</td>
             <td>{% if hamburguesa.incluye_papas %}Si{% else %}No{% endif %}</td>
             <td>
-                {% if hamburguesa.activa %}
-                    <span class="badge badge-entregado">Activa</span>
-                {% else %}
-                    <span class="badge badge-cancelado">Inactiva</span>
-                {% endif %}
+                <span class="badge badge-entregado">Activa</span>
             </td>
             <td>
                 <a href="{% url 'menu:editar_hamburguesa' hamburguesa.pk %}" class="btn btn-info">Editar</a>
                 <a href="{% url 'menu:activar_hamburguesa' hamburguesa.pk %}" class="btn btn-warning">
-                    {% if hamburguesa.activa %}Desactivar{% else %}Activar{% endif %}
+                    Desactivar
                 </a>
             </td>
         </tr>
         {# empty se muestra solo si la lista vino vacia #}
         {% empty %}
         <tr>
-            <td colspan="6">Todavia no hay hamburguesas cargadas.</td>
+            <td colspan="6">No hay hamburguesas activas. Agregá una para tomar pedidos.</td>
         </tr>
         {% endfor %}
     </tbody>

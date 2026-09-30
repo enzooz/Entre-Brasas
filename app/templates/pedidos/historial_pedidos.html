@@ -5,10 +5,10 @@
 
 {% block contenido %}
 <form method="GET" class="filter-bar">
-    <input type="text" name="busqueda" class="form-control"
+    <input type="text" name="busqueda" class="form-control" aria-label="Buscar por cliente"
            placeholder="Buscar por cliente" value="{{ busqueda }}">
 
-    <select name="estado" class="form-control">
+    <select name="estado" class="form-control" aria-label="Filtrar por estado">
         <option value="">Entregados y cancelados</option>
         <option value="entregado" {% if estado == 'entregado' %}selected{% endif %}>Solo entregados</option>
         <option value="cancelado" {% if estado == 'cancelado' %}selected{% endif %}>Solo cancelados</option>
@@ -39,7 +39,7 @@
             <th>Estado</th>
             <th>Pago</th>
             <th>Total</th>
-            <th></th>
+            <th>Detalle</th>
         </tr>
     </thead>
     <tbody>

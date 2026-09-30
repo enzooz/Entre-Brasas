@@ -75,6 +75,7 @@ INSTALLED_APPS = [
 # Cada pedido del navegador pasa por esta lista de arriba hacia abajo.
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'entre_brasas.middleware.BloqueoDuranteApagadoMiddleware',
     # Sirve el CSS. Con DEBUG en False Django deja de hacerlo solo.
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -99,6 +100,7 @@ TEMPLATES = [
             'context_processors': [
                 'django.template.context_processors.request',
                 'django.contrib.messages.context_processors.messages',
+                'entre_brasas.context_processors.navegacion',
             ],
         },
     },

@@ -18,21 +18,24 @@
     {% csrf_token %}
 
     <div class="card">
-        <h2>Envio</h2>
+        <h2>Envío</h2>
         <p>
-            {{ form.tarifa_km.label_tag }}
-            {{ form.tarifa_km }}
-            <small>Cuanto se cobra por cada kilometro.</small>
+            {{ form.tarifa_100m.label_tag }}
+            {{ form.tarifa_100m }}
+            {{ form.tarifa_100m.errors }}
+            <small id="ayudaTarifa">0,1 km = 100 metros. Un envío de 5,4 km suma 54 veces esta tarifa al envío mínimo, sin redondear los kilómetros.</small>
         </p>
         <p>
             {{ form.distancia_minima.label_tag }}
             {{ form.distancia_minima }}
-            <small>Hasta esta distancia el envio es gratis.</small>
+            {{ form.distancia_minima.errors }}
+            <small>Por debajo de esta distancia el envío es gratis. Usá hasta un decimal: 0,1 km son 100 metros.</small>
         </p>
         <p>
             {{ form.costo_minimo_envio.label_tag }}
             {{ form.costo_minimo_envio }}
-            <small>El envio nunca sale menos que esto.</small>
+            {{ form.costo_minimo_envio.errors }}
+            <small id="ayudaEnvioMinimo">Se suma a la tarifa por distancia cuando el envío no es gratis. Ejemplo: mínimo $1.000 + tarifa por distancia $2.700 = envío $3.700.</small>
         </p>
     </div>
 
@@ -41,6 +44,7 @@
         <p>
             {{ form.costo_hora_mano_obra.label_tag }}
             {{ form.costo_hora_mano_obra }}
+            {{ form.costo_hora_mano_obra.errors }}
             <small>Se usa en la pantalla de costos.</small>
         </p>
     </div>
@@ -50,6 +54,7 @@
         <p>
             <label for="{{ form.whatsapp_cocina.id_for_label }}">WhatsApp de la cocina</label>
             {{ form.whatsapp_cocina }}
+            {{ form.whatsapp_cocina.errors }}
             <small>
                 El numero del celular de la cocina, con 549 y la caracteristica,
                 sin el 0 ni el 15. Si lo cargas, cada pedido tiene un boton que
