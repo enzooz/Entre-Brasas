@@ -254,7 +254,7 @@ cargados; un `git pull` por sí solo no actualiza el menú de la base.
 La configuración del envío ahora expresa la tarifa por **100 metros**. La
 migración divide la tarifa anterior por 10 para conservar el precio equivalente.
 La distancia se ingresa en kilómetros exactos: 5,4 km cobra 54 veces la tarifa,
-respetando el umbral de envío gratis y el costo mínimo configurados.
+más el envío mínimo (importe base), salvo retiro o distancia dentro del umbral gratis.
 
 ---
 
@@ -429,6 +429,29 @@ limpia después de crear correctamente el pedido, o con **Descartar borrador**
 y su confirmación. Cada pestaña mantiene su propio borrador; cerrar la pestaña
 termina esa sesión. Al recuperarlo se usan los precios y tarifas actuales y
 se avisa si algún producto o extra ya no está disponible.
+
+**Clientes guardados:** en Nuevo pedido, buscá por nombre o teléfono y elegí un
+resultado para completar nombre, teléfono y dirección. Revisá la dirección y
+volvé a ingresar la distancia si cambió. **Cliente nuevo** limpia esos datos, no
+las hamburguesas. Los datos del cliente se guardan al crear correctamente el
+pedido; un error no deja registros parciales. Se conserva una copia de los datos
+en cada pedido, así actualizar el cliente no cambia ventas anteriores.
+
+Los pedidos existentes con teléfono identificable se vinculan automáticamente
+al aplicar las migraciones. Se agrupan por los dígitos del teléfono, sin inferir
+país ni prefijos. Sin teléfono, no se unen personas por su nombre: para reutilizar
+un cliente sin teléfono, elegilo en la búsqueda. Retiro sigue admitiendo solo nombre.
+
+**Baja de ingredientes:** los movimientos anteriores no impiden desactivar un
+insumo. Sí lo impide una receta de hamburguesa o adicional activo que lo use.
+Primero quitá el insumo de esas recetas o desactivá los productos; el historial
+y el stock no se borran.
+
+**Prueba técnica de instalación (Windows):** desde la raíz, ejecutar
+`app\venv\Scripts\python.exe app\entre_brasas\probar_instalacion.py`.
+Necesita internet y usa una copia aislada: no toca tu base ni tu escritorio.
+Comprueba instalación, stock inicial 0, acceso sin consola y actualización sin
+pisar datos. La prueba de arranque/apagado/reapertura está en la suite Django.
 
 Si se hace doble clic con el sistema ya abierto, solo se abre otra pestaña.
 Si hay un error de arranque, aparece un aviso y el detalle queda en

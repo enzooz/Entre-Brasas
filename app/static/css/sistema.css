@@ -36,6 +36,22 @@ html { scroll-behavior: smooth; scroll-padding-top: 90px; }
 body { display: block; font-family: Manrope, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.6; }
 ::selection { background: #cddcff; color: #102349; }
 input, textarea { caret-color: var(--primary); }
+/* Carga numérica por teclado, sin flechas; conserva min, max y step. */
+input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.customer-search { padding-bottom: 20px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+.customer-search > small { display: block; color: var(--text-light); margin: 6px 0 10px; }
+.customer-search-controls { display: flex; align-items: center; gap: 8px; }
+.customer-search-controls input { min-width: 0; flex: 1; }
+.customer-search-status { color: var(--text-light); font-size: 12px; margin: 10px 0; }
+.customer-search-status:empty { display: none; }
+.customer-results { display: grid; gap: 6px; margin: 12px 0; }
+.customer-results[hidden] { display: none; }
+.customer-result { width: 100%; background: var(--bg-white); color: var(--text-dark); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; text-align: left; cursor: pointer; }
+.customer-result:hover { background: var(--primary-light); border-color: var(--primary); }
+.customer-result strong, .customer-result span { display: block; overflow-wrap: anywhere; }
+.customer-result span { color: var(--text-light); font-size: 12px; margin-top: 4px; }
 * { scrollbar-width: thin; scrollbar-color: #9ca9bf transparent; }
 a { text-underline-offset: 4px; }
 a:hover { text-decoration: none; }
@@ -197,7 +213,7 @@ form > .card { background: transparent; border: 0; padding: 0; margin-bottom: 28
 form .card:not(:first-of-type) { border-top: 1px solid var(--border); padding-top: 24px; }
 form p { margin-bottom: 18px; } form small { display: block; margin-top: 6px; max-width: 75ch; }
 form label { font-size: 12px; color: #354158; font-weight: 700; }
-form input[type='text'], form input[type='number'], form input[type='date'], form select, form textarea { padding: 11px 13px; border-radius: 8px; font-size: 13px; border-color: #ccd4e1; min-height: 44px; }
+form input[type='text'], form input[type='search'], form input[type='tel'], form input[type='number'], form input[type='date'], form select, form textarea { padding: 11px 13px; border-radius: 8px; font-size: 13px; border-color: #ccd4e1; min-height: 44px; }
 form textarea { line-height: 1.7; }
 form input:focus, form select:focus, form textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px #e3eaff; }
 input::placeholder, textarea::placeholder { color: #737e91; }

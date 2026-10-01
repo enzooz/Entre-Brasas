@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block titulo %}Nuevo pedido - Entre Brasas{% endblock %}
 {% block encabezado %}Nuevo pedido{% endblock %}
@@ -45,10 +46,31 @@
     <div class="order-fields">
     <div class="card" id="paso-cliente">
         <h2>1. ¿Para quién es?</h2>
+        <div class="customer-search">
+            <label for="buscarCliente">Buscar cliente guardado (opcional)</label>
+            <small id="ayudaBuscarCliente">Escribí al menos 2 caracteres del nombre o teléfono y elegí un resultado.</small>
+            <div class="customer-search-controls">
+                <input type="search" id="buscarCliente" class="form-control" maxlength="100" autocomplete="off"
+                       aria-describedby="ayudaBuscarCliente" aria-controls="resultadosClientes" data-url="{% url 'pedidos:buscar_clientes' %}"
+                       placeholder="Nombre o teléfono">
+                <button type="button" class="btn btn-secondary" id="botonBuscarCliente">Buscar</button>
+            </div>
+            <p id="estadoClientes" class="customer-search-status" role="status" aria-live="polite"></p>
+            <div id="resultadosClientes" class="customer-results" role="group" aria-label="Clientes encontrados" hidden></div>
+            <button type="button" class="btn btn-secondary" id="clienteNuevo">Cliente nuevo</button>
+            <small>Cliente nuevo limpia nombre, teléfono y dirección; no modifica las hamburguesas.</small>
+        </div>
+        <input type="hidden" name="cliente_id" id="clienteGuardadoId">
         <p>
             <label for="clienteNombre">Nombre del cliente *</label>
             <input type="text" name="cliente_nombre" id="clienteNombre" class="form-control"
-                   required autocomplete="off" placeholder="Ej.: Agostina">
+                   required maxlength="200" autocomplete="off" placeholder="Ej.: Agostina">
+        </p>
+        <p>
+            <label for="clienteTelefono">Teléfono (obligatorio para envío)</label>
+            <input type="tel" name="cliente_telefono" id="clienteTelefono" class="form-control"
+                   maxlength="50" autocomplete="off" aria-describedby="ayudaTelefono">
+            <small id="ayudaTelefono">Los datos se guardan al crear el pedido. El teléfono permite reconocer al cliente la próxima vez.</small>
         </p>
         <p>
             <label for="observaciones">Observaciones del pedido</label>
@@ -100,13 +122,8 @@
             <p>
                 <label for="clienteDireccion">Direccion o link de Google Maps *</label>
                 <input type="text" name="cliente_direccion" id="clienteDireccion" class="form-control"
-                       autocomplete="off" oninput="mostrarLinkMaps()">
+                       maxlength="300" autocomplete="off" oninput="mostrarLinkMaps()">
                 <a id="linkMaps" href="#" target="_blank" rel="noopener" hidden>Abrir en Google Maps para ver la distancia</a>
-            </p>
-            <p>
-                <label for="clienteTelefono">Telefono *</label>
-                <input type="text" name="cliente_telefono" id="clienteTelefono" class="form-control"
-                       autocomplete="off">
             </p>
             <p>
                 <label for="distancia">Distancia (km) *</label>
@@ -414,6 +431,8 @@ function completarDesdeMensaje() {
 
 
 function completarFormulario(pedido) {
+    document.getElementById('clienteGuardadoId').value = '';
+    document.dispatchEvent(new Event('cliente:carga-manual'));
     // Un mensaje nuevo reemplaza lo que haya dejado el anterior. El nombre
     // solo se pisa si el mensaje trae uno, por si ya lo habian escrito.
     if (pedido.nombre) {
@@ -549,4 +568,5 @@ formulario.addEventListener('submit', function (evento) {
     }
 });
 </script>
+<script src="{% static 'js/clientes-pedido.js' %}" defer></script>
 {% endblock %}

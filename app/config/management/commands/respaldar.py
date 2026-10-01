@@ -7,7 +7,7 @@ Se corre asi:
 iniciar.bat lo corre solo cada vez que se abre el sistema, antes de
 levantar el servidor. Las copias quedan en COPIAS_DIR (ver settings.py),
 con la fecha y la hora en el nombre:
-    entre_brasas_2026-09-26_20-15.sqlite3
+    entre_brasas_2026-09-26_20-15-30-123456.sqlite3
 
 Se guardan las ultimas 30 copias. Las mas viejas se borran solas para que
 la carpeta no crezca para siempre.
@@ -37,7 +37,8 @@ class Command(BaseCommand):
 
         settings.COPIAS_DIR.mkdir(parents=True, exist_ok=True)
 
-        fecha = datetime.now().strftime('%Y-%m-%d_%H-%M')
+        # Instalar y abrir enseguida no deben pisar la copia previa a migrar.
+        fecha = datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
         destino = settings.COPIAS_DIR / f'entre_brasas_{fecha}.sqlite3'
 
         # SQLite trae su propia forma de copiar una base. Es mas segura que

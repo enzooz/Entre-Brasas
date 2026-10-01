@@ -1,6 +1,6 @@
 # PLAN DE MEJORAS PENDIENTES — ENTRE BRASAS
 
-**Última actualización:** 27/09/2026
+**Última actualización:** 30/09/2026
 **Origen:** revisión de UX de las pestañas Nuevo Pedido, Cola, Historial, Inventario y
 Recetas (lista "PESTAÑA NUEVO PEDIDO"), cruzada contra el código actual.
 
@@ -20,8 +20,8 @@ Recetas (lista "PESTAÑA NUEVO PEDIDO"), cruzada contra el código actual.
 | Nuevo pedido | Pegar el mensaje de WhatsApp y completar solo | ✅ Hecho (28/09) |
 | Nuevo pedido | Ocultar "Distancia" si retira en el local | ✅ Hecho |
 | Nuevo pedido | Mostrar el total antes de confirmar | ✅ Hecho |
-| Nuevo pedido | Guardar lo escrito con localStorage | ⏳ Pendiente — Tanda 1 |
-| Nuevo pedido | Clientes guardados en la base | ⏳ Pendiente — Tanda 3 |
+| Nuevo pedido | Conservar lo escrito al salir o recargar | ✅ Hecho: borrador por pestaña con sessionStorage |
+| Nuevo pedido | Clientes guardados y búsqueda por nombre o teléfono | ✅ Hecho: Tanda 3 |
 | Cola | Un color por estado (etiqueta, tarjeta y botón) | ✅ Hecho |
 | Cola | "Ver detalle" del mismo tamaño que el botón de estado | ✅ Hecho |
 | Cola | Barra de búsqueda a ancho completo | ✅ Hecho |
@@ -30,7 +30,7 @@ Recetas (lista "PESTAÑA NUEVO PEDIDO"), cruzada contra el código actual.
 | Historial | Cambios de estado con fecha y hora | ✅ Hecho |
 | Historial | Botón "Eliminar pedido" | ❓ A decidir (#3) |
 | Inventario | Unidad de medida al registrar movimiento | ✅ Hecho |
-| Inventario | Regla para desactivar ingredientes | ❓ A decidir (#1) |
+| Inventario | Regla para desactivar ingredientes | ✅ Hecho: solo bloquean recetas de productos activos |
 | Recetas | Quitar la opción "Adicional" | ❓ A decidir (#4) — no se recomienda |
 
 ---
@@ -39,20 +39,12 @@ Recetas (lista "PESTAÑA NUEVO PEDIDO"), cruzada contra el código actual.
 
 ### 1. Regla para desactivar ingredientes
 
-**Hoy:** no se puede desactivar un ingrediente que tenga *cualquier* movimiento
-registrado (compra, consumo de un pedido o ajuste). Ver
-`app/inventario/views.py` → `activar_ingrediente()`.
-
-Por eso el Jamón se pudo desactivar y otros no: el Jamón nunca tuvo movimientos.
-Los que sí tienen son Carne molida, Cebolla, Lechuga, Pan y Tomate.
-
-**Problema:** la regla está al revés. Desactivar sirve justamente para "ya no lo
-uso, pero quiero conservar el historial".
-
-**Propuesta:** no dejar desactivar un ingrediente que esté en la receta de una
-hamburguesa o adicional activos. Ese caso sí rompe el descuento de stock.
-
-**Decisión:** _pendiente_
+**Implementado:** se permite desactivar aunque existan compras, consumos o ajustes.
+No se borran el ingrediente, su stock, sus recetas ni sus movimientos.
+Solo se bloquea la baja si está en la receta de una hamburguesa activa o de un
+adicional activo (aunque ese adicional todavía no esté asociado a hamburguesas).
+La pantalla explica que primero hay que quitarlo de esas recetas o desactivar
+los productos. Ver `app/inventario/views.py` → `activar_ingrediente()`.
 
 ### 2. Qué pasa con el stock al seguir sin stock suficiente
 
@@ -80,7 +72,9 @@ Se pidió porque en la versión anterior las recetas de adicionales no descontab
 stock. **Ahora sí lo hacen** (`app/pedidos/calculos.py` → `buscar_recetas_del_item()`).
 Si se quita, un adicional como el bacon nunca descuenta bacon.
 
-Hoy hay 0 recetas de adicionales cargadas, por eso parece que no sirve.
+El menú real ya incluye recetas de adicionales. Las cantidades que no provienen
+de la captura del menú son estimaciones; su revisión con el local está pospuesta
+por decisión del usuario el 30/09. Tener stock en 0 no confirma una receta.
 
 **Recomendación:** mantenerla y cargar las recetas de los adicionales.
 
@@ -99,11 +93,14 @@ adicionales. Desde el 27/09/2026 todos los campos van por número de fila
 
 ---
 
-## TANDA 1 — Cambios chicos
+## TANDA 1 — Cambios chicos ✅ Hecho
 
-1. **localStorage en Nuevo pedido:** guardar lo escrito para que no se pierda al
-   recargar, y limpiarlo cuando el pedido se crea bien.
-2. **Regla de ingredientes:** aplicar la decisión #1.
+1. **Borrador en Nuevo pedido:** sessionStorage conserva datos, unidades, extras,
+   notas, entrega, pago y cliente elegido al salir o recargar en la misma pestaña.
+   Se limpia tras creación confirmada o descarte explícito, no al enviar.
+   Cerrar la pestaña termina la sesión; no se comparte entre pestañas.
+2. **Regla de ingredientes:** aplicada la decisión #1, preservando historial.
+3. **Campos numéricos:** sin flechas visuales, conservando min, max, step y validación.
 
 ## TANDA 2 — Seguir aunque falte stock ✅ Hecho (28/09/2026)
 
@@ -125,21 +122,43 @@ porque los medallones se terminan en pocos días y vuelve a frenar.
 - De paso se arregló que el precio de "Registrar movimiento" era obligatorio
   aunque la pantalla decía "opcional".
 
-## TANDA 3 — Clientes
+## TANDA 3 — Clientes ✅ Hecho
 
-Hoy `Pedido` guarda los datos del cliente como texto suelto (`cliente_nombre`,
-`cliente_telefono`, `cliente_direccion`). No existe un modelo `Cliente`.
+1. Modelo `pedidos.Cliente`: nombre, teléfono, dirección, fechas de alta y actualización.
+2. `Pedido.cliente` opcional, con SET_NULL; mantiene los campos de texto y precios
+   del momento de la venta. Actualizar un cliente no reescribe pedidos anteriores.
+3. Migraciones 0004 y 0005: importan pedidos existentes por teléfono de 7–20
+   dígitos; ignoran separadores, sin inferir país o prefijos. Los pedidos sin un
+   teléfono identificable no se fusionan por nombre. Se conserva su contenido.
+4. Búsqueda local por nombre o teléfono en Nuevo pedido; hasta 8 resultados,
+   sin caché. Elegir uno completa nombre, teléfono y dirección, sin crear pedidos.
+   Si cambia la dirección se limpia la distancia para volver a calcularla.
+5. Crear un pedido guarda/actualiza su cliente en la misma transacción. Sin
+   teléfono, solo se reutiliza un cliente elegido explícitamente; no se unen
+   homónimos. Cliente nuevo limpia sus campos, no las hamburguesas ni notas.
+6. La selección se conserva en el borrador. Un error al crear no guarda un
+   cliente parcial ni borra el borrador.
 
-1. Crear el modelo `Cliente` (nombre, teléfono, dirección, fecha de alta).
-2. Agregar un `cliente` opcional en `Pedido`, sin sacar los campos de texto para
-   no romper los pedidos viejos.
-3. Crear los clientes a partir de los pedidos existentes, agrupando por teléfono.
-4. En Nuevo pedido: buscador por teléfono o nombre que complete los datos, más
-   la opción "cliente nuevo".
+## ENTREGA Y VERIFICACIONES
+
+- Prueba aislada del instalador: `app/entre_brasas/probar_instalacion.py`.
+  Ejecuta instalación limpia y actualización en una carpeta temporal, sin usar
+  la base ni el escritorio real. Comprueba menú, stock inicial 0, acceso directo
+  a pythonw y conservación de pedidos, clientes, precios, tarifas y respaldo.
+- Pruebas del iniciador: arranque sin consola, doble apertura, apagado desde la
+  web y reapertura sin pérdida de pedidos (`test_servidor_local.py`).
+- La comprobación en la computadora final del local requiere acceso a esa PC;
+  una prueba aislada en desarrollo no sustituye esa aceptación.
+- Cantidades de recetas: **pospuestas por el usuario**. Stock actual sin cambios;
+  el local podrá cargar las existencias mediante Registrar movimiento → Conteo.
 
 ---
 
 ## HECHO EL 27/09/2026 — Carga rápida y comanda para cocina
+
+Nota histórica: las cantidades agrupadas y nombres Simple/Doble/Triple descritos
+abajo fueron reemplazados el 30/09 por unidades independientes y cantidades
+explícitas de medallones extra. Ver `cambios-menu-envio-personalizacion.md`.
 
 En el local los pedidos llegan por WhatsApp y el que está en la PC se los
 reenvía a la cocina con un WhatsApp escrito a mano. Ahora el pedido se carga

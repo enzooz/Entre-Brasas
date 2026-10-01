@@ -197,6 +197,8 @@ form label {
 }
 
 form input[type="text"],
+form input[type="search"],
+form input[type="tel"],
 form input[type="number"],
 form input[type="date"],
 form select,

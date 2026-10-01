@@ -1,8 +1,15 @@
 from decimal import Decimal
+from contextlib import closing
+from io import StringIO
+from pathlib import Path
+import sqlite3
+import tempfile
+from unittest import mock
 
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
-from django.test import TestCase, TransactionTestCase
+from django.test import SimpleTestCase, TestCase, TransactionTestCase, override_settings
+from django.core.management import call_command
 
 from .forms import ConfiguracionForm
 from .models import Configuracion
@@ -53,3 +60,24 @@ class MigracionTarifaTests(TransactionTestCase):
             self.assertEqual(Configuracion.objects.get(pk=1).tarifa_100m, Decimal('55.50'))
         finally:
             MigrationExecutor(connection).migrate([('config', '0003_tarifa_por_100_metros')])
+
+
+class RespaldosTests(SimpleTestCase):
+    def test_copias_seguidas_no_se_pisan_y_rotacion_solo_toca_copias(self):
+        with tempfile.TemporaryDirectory(prefix='entre-brasas-copias-') as temporal:
+            raiz = Path(temporal).resolve()
+            base = raiz / 'db.sqlite3'
+            copias = raiz / 'copias'
+            with closing(sqlite3.connect(base)) as conexion:
+                conexion.execute('CREATE TABLE prueba (valor INTEGER)')
+                conexion.execute('INSERT INTO prueba VALUES (123)')
+                conexion.commit()
+            with override_settings(DATABASES={'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': base}}, COPIAS_DIR=copias):
+                with mock.patch('config.management.commands.respaldar.CANTIDAD_DE_COPIAS', 2):
+                    for _ in range(3):
+                        call_command('respaldar', stdout=StringIO())
+            archivos = list(copias.glob('*.sqlite3'))
+            self.assertEqual(len(archivos), 2)
+            self.assertNotEqual(archivos[0].name, archivos[1].name)
+            with closing(sqlite3.connect(base)) as conexion:
+                self.assertEqual(conexion.execute('SELECT valor FROM prueba').fetchall(), [(123,)])

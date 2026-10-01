@@ -106,6 +106,7 @@ Los controles usan esquinas pequeñas; paneles y cards, medianas; los dos bloque
 
 - Botón principal: verbo y objeto concretos, por ejemplo “Crear pedido” o “Guardar movimiento”. El secundario tiene fondo blanco y borde. Estados de espera deshabilitan el control e indican qué está pasando.
 - Campos: etiqueta siempre visible, área de 44px y foco azul. Los errores se muestran cerca del campo; no reemplazar etiquetas con placeholders.
+- Campos numéricos: sin flechas de incremento/decremento, para cargar el valor por teclado. Conservar el tipo numérico y sus límites, pasos y validaciones en todas las pantallas.
 - Cards de acceso: toda la superficie navega a una tarea. Su texto explica para qué sirve; las flechas acompañan y no sustituyen el nombre.
 - Etiquetas: tono suave, texto oscuro y descripción de estado. Las tarjetas de pedidos usan una línea superior con el mismo significado.
 - Nuevo pedido: pasos enlazados, autocompletado de WhatsApp desplegable y resumen lateral en escritorio. Cada toque en el menú agrega un bloque numerado por unidad, con extras y nota propios. No repetir el botón para agregar dentro de cada bloque. Nombre, cantidades, total y próximo paso se actualizan mientras se completa el formulario.
@@ -115,6 +116,7 @@ Los controles usan esquinas pequeñas; paneles y cards, medianas; los dos bloque
 - Vacíos: explican qué falta y ofrecen una acción. Una búsqueda sin resultados permite limpiar los filtros.
 - Sistema apagado: toda pantalla abierta pasa a escala de grises, sin controles editables ni enlaces operativos. Un aviso accesible explica cómo reabrir; una pérdida de conexión se nombra de forma distinta. Al reabrir, no enviar borradores automáticamente: volver al inicio con datos actuales.
 - Borrador de nuevo pedido: guardado automático local por pestaña al modificar campos o unidades. Recuperar datos, extras y notas al volver, recalculando con el menú actual. Mostrar confirmación de guardado y aviso si cambió la disponibilidad. Limpiar solo después de una creación confirmada o un descarte explícito; nunca al enviar un formulario que puede fallar.
+- Clientes: búsqueda opcional por nombre o teléfono, resultados como botones accesibles y selección explícita. Mantener carga manual, estados de espera/vacío/error y opción Cliente nuevo sin tocar hamburguesas. Cambiar de dirección limpia la distancia. El perfil se guarda al crear el pedido; la selección forma parte del borrador y el pedido conserva su copia histórica.
 
 ## Do's and Don'ts
 

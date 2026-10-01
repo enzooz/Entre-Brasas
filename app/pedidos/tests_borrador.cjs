@@ -15,14 +15,14 @@ function setup({storage = new Map(), cookie = '', formPresent = true, failStorag
             addEventListener(type, fn) { this.listeners[type] = fn; }, focus() { this.focused = true; }};
     }
     const ids = Object.fromEntries(['clienteNombre', 'observaciones', 'clienteDireccion', 'clienteTelefono', 'distancia', 'mensajeWhatsapp',
-        'borradorAviso', 'borradorEstado', 'borradorAyuda', 'borradorToken', 'descartarBorrador', 'resultadoMensaje', 'listaProductos'].map(id => [id, node()]));
+        'clienteGuardadoId', 'borradorAviso', 'borradorEstado', 'borradorAyuda', 'borradorToken', 'descartarBorrador', 'resultadoMensaje', 'listaProductos'].map(id => [id, node()]));
     const rows = [], details = node(), events = {}, windowEvents = {};
     const delivery = [node('true'), node('false')], payment = [node('efectivo'), node('transferencia')];
     payment[0].checked = true;
     const form = node();
     form.querySelectorAll = selector => selector.includes('retiro_local') ? delivery : payment;
     form.querySelector = selector => form.querySelectorAll(selector).find(x => x.checked) || null;
-    form.reset = () => { ['clienteNombre', 'observaciones', 'clienteDireccion', 'clienteTelefono', 'distancia', 'mensajeWhatsapp'].forEach(id => ids[id].value = ''); delivery.forEach(x => x.checked = false); payment[0].checked = true; payment[1].checked = false; };
+    form.reset = () => { ['clienteGuardadoId', 'clienteNombre', 'observaciones', 'clienteDireccion', 'clienteTelefono', 'distancia', 'mensajeWhatsapp'].forEach(id => ids[id].value = ''); delivery.forEach(x => x.checked = false); payment[0].checked = true; payment[1].checked = false; };
     Object.defineProperty(ids.listaProductos, 'innerHTML', {set() { rows.length = 0; }});
     function createRow(id) {
         const note = node(), meats = [node('0'), node('1'), node('2')], extras = [node('10'), node('11')], meatGroup = node();
@@ -49,6 +49,7 @@ function setup({storage = new Map(), cookie = '', formPresent = true, failStorag
 test('guarda y recupera campos, unidades independientes, extras, medallones y notas', () => {
     const ui = setup();
     ui.ids.clienteNombre.value = 'Prueba de borrador';
+    ui.ids.clienteGuardadoId.value = '7';
     ui.ids.clienteDireccion.value = 'Dirección de prueba';
     ui.ids.clienteTelefono.value = '123';
     ui.ids.distancia.value = '5.4';
@@ -63,6 +64,7 @@ test('guarda y recupera campos, unidades independientes, extras, medallones y no
     ui.form.listeners.input();
     const saved = JSON.parse(ui.storage.get(key));
     assert.equal(saved.items.length, 2);
+    assert.equal(saved.fields.clienteGuardadoId, '7');
     assert.deepEqual(saved.items[0].extras, ['10']);
     assert.deepEqual(saved.items[1].extras, []);
     assert.equal(JSON.stringify(saved).includes('csrf'), false);

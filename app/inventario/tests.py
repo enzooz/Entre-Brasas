@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from menu.models import Hamburguesa, Adicional
-from .models import Ingrediente, Receta, ingredientes_del_menu_activo
+from .models import Ingrediente, MovimientoInventario, Receta, ingredientes_del_menu_activo
 from .forms import MovimientoForm
 
 
@@ -61,3 +61,44 @@ class InventarioMenuActivoTests(TestCase):
         self.assertEqual(list(response.context['ingredientes']), [])
         self.assertEqual(response.context['sin_contar'], [])
         self.assertContains(response, 'El menú activo todavía no tiene ingredientes asociados')
+
+
+class BajaIngredienteTests(TestCase):
+    def setUp(self):
+        self.insumo = Ingrediente.objects.create(nombre='Insumo de prueba', unidad='kg', stock_actual=5, stock_minimo=1)
+        self.ruta = reverse('inventario:activar_ingrediente', args=[self.insumo.pk])
+
+    def test_movimientos_historicos_no_impiden_baja_y_no_se_borran(self):
+        movimiento = MovimientoInventario.objects.create(ingrediente=self.insumo, tipo='entrada', cantidad=5, motivo='Histórico')
+        self.client.get(self.ruta)
+        self.insumo.refresh_from_db()
+        self.assertFalse(self.insumo.activo)
+        self.assertEqual(self.insumo.stock_actual, 5)
+        self.assertTrue(MovimientoInventario.objects.filter(pk=movimiento.pk).exists())
+
+    def test_hamburguesa_activa_bloquea_aunque_no_haya_movimientos(self):
+        burger = Hamburguesa.objects.create(nombre='Activa', precio=1000)
+        Receta.objects.create(hamburguesa=burger, ingrediente=self.insumo, cantidad_requerida=1)
+        self.client.get(self.ruta)
+        self.insumo.refresh_from_db()
+        self.assertTrue(self.insumo.activo)
+
+    def test_adicional_activo_bloquea_aunque_no_este_ofrecido(self):
+        extra = Adicional.objects.create(nombre='Extra activo', precio=1000)
+        Receta.objects.create(adicional=extra, ingrediente=self.insumo, cantidad_requerida=1)
+        self.client.get(self.ruta)
+        self.insumo.refresh_from_db()
+        self.assertTrue(self.insumo.activo)
+
+    def test_recetas_inactivas_se_conservan_pero_no_bloquean(self):
+        burger = Hamburguesa.objects.create(nombre='Vieja', precio=1000, activa=False)
+        extra = Adicional.objects.create(nombre='Viejo', precio=1000, activo=False)
+        Receta.objects.create(hamburguesa=burger, ingrediente=self.insumo, cantidad_requerida=1)
+        Receta.objects.create(adicional=extra, ingrediente=self.insumo, cantidad_requerida=1)
+        self.client.get(self.ruta)
+        self.insumo.refresh_from_db()
+        self.assertFalse(self.insumo.activo)
+        self.assertEqual(self.insumo.recetas.count(), 2)
+        self.client.get(self.ruta)
+        self.insumo.refresh_from_db()
+        self.assertTrue(self.insumo.activo)

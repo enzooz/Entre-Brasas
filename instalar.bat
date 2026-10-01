@@ -5,6 +5,8 @@ rem el programa por una version nueva y se vuelve a correr, no se pierden datos.
 rem Los datos quedan en %LOCALAPPDATA%\EntreBrasas (ver app\entre_brasas\settings.py).
 
 setlocal
+set SIN_PAUSA=0
+if /i "%~1"=="--sin-pausa" set SIN_PAUSA=1
 title Instalacion de Entre Brasas
 cd /d "%~dp0app"
 
@@ -23,7 +25,7 @@ if errorlevel 1 (
     echo 2. Al instalarlo, marca la casilla "Add python.exe to PATH".
     echo 3. Volve a abrir este archivo.
     echo.
-    pause
+    if "%SIN_PAUSA%"=="0" pause
     exit /b 1
 )
 
@@ -53,7 +55,7 @@ venv\Scripts\python.exe manage.py seed_data --si-esta-vacia || goto error
 echo [4/4] Creando el acceso directo en el escritorio...
 rem pythonw ejecuta sin consola. El apagado se hace desde la web.
 rem IconLocation = el logo de Entre Brasas en vez del icono generico de .bat.
-powershell -NoProfile -Command "$s = (New-Object -ComObject WScript.Shell).CreateShortcut([Environment]::GetFolderPath('Desktop') + '\Entre Brasas.lnk'); $s.TargetPath = '%~dp0app\venv\Scripts\pythonw.exe'; $s.Arguments = [char]34 + '%~dp0app\iniciar.py' + [char]34; $s.WorkingDirectory = '%~dp0app'; $s.IconLocation = '%~dp0app\static\img\entre-brasas.ico'; $s.Save()" || goto error
+powershell -NoProfile -Command "$d = $env:ENTRE_BRASAS_ESCRITORIO; if (-not $d) { $d = [Environment]::GetFolderPath('Desktop') }; $s = (New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path $d 'Entre Brasas.lnk')); $s.TargetPath = '%~dp0app\venv\Scripts\pythonw.exe'; $s.Arguments = [char]34 + '%~dp0app\iniciar.py' + [char]34; $s.WorkingDirectory = '%~dp0app'; $s.IconLocation = '%~dp0app\static\img\entre-brasas.ico'; $s.Save()" || goto error
 
 echo.
 echo ============================================================
@@ -64,7 +66,7 @@ echo   del escritorio.
 echo   Para apagarlo, usa "Apagar sistema" dentro de la web.
 echo ============================================================
 echo.
-pause
+if "%SIN_PAUSA%"=="0" pause
 exit /b 0
 
 :error
@@ -75,5 +77,5 @@ echo   Revisa los mensajes de arriba o sacale una foto a esta
 echo   pantalla y mandasela a quien te instalo el sistema.
 echo ============================================================
 echo.
-pause
+if "%SIN_PAUSA%"=="0" pause
 exit /b 1

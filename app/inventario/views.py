@@ -9,6 +9,7 @@ Tiene tres partes:
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db import transaction
+from django.db.models import Q
 from django.urls import reverse
 
 from menu.models import Hamburguesa, Adicional
@@ -206,15 +207,17 @@ def activar_ingrediente(request, ingrediente_id):
     """
     Activa o desactiva un ingrediente.
 
-    Si el ingrediente ya tiene movimientos registrados no se puede desactivar,
-    porque dejaria sin sentido los movimientos historicos.
+    El historial se conserva. Solo impide la baja si alguna receta de un
+    producto activo todavía lo necesita, incluso adicionales activos.
     """
     ingrediente = get_object_or_404(Ingrediente, pk=ingrediente_id)
 
-    if ingrediente.activo and ingrediente.movimientos.exists():
+    en_uso = ingrediente.recetas.filter(Q(hamburguesa__activa=True) | Q(adicional__activo=True)).exists()
+    if ingrediente.activo and en_uso:
         messages.error(
             request,
-            'No se puede desactivar un ingrediente que ya tiene movimientos'
+            'Este ingrediente se usa en una hamburguesa o adicional activo. '
+            'Quitalo de esas recetas o desactivá los productos antes de darlo de baja.'
         )
         return redirect('inventario:listar_ingredientes')
 

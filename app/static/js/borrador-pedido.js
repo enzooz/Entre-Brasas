@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!form) return;
 
     var fieldIds = ['clienteNombre', 'observaciones', 'clienteDireccion', 'clienteTelefono', 'distancia', 'mensajeWhatsapp'];
+    if (document.getElementById('clienteGuardadoId')) fieldIds.push('clienteGuardadoId');
     var notice = document.getElementById('borradorAviso');
     var state = document.getElementById('borradorEstado');
     var help = document.getElementById('borradorAyuda');

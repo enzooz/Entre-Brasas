@@ -11,6 +11,22 @@ La estructura es una jerarquia de cuatro tablas:
 from django.db import models
 
 
+class Cliente(models.Model):
+    """Datos reutilizables; los pedidos conservan su propia copia histórica."""
+    nombre = models.CharField(max_length=200)
+    telefono = models.CharField(max_length=50, blank=True)
+    telefono_clave = models.CharField(max_length=20, blank=True, null=True, unique=True)
+    direccion = models.CharField(max_length=300, blank=True)
+    fecha_alta = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['nombre', 'pk']
+
+    def __str__(self):
+        return self.nombre
+
+
 class Pedido(models.Model):
     """Un pedido completo: datos del cliente, envio, total y estado."""
 
@@ -40,6 +56,7 @@ class Pedido(models.Model):
     ]
 
     # --- Datos del cliente ---
+    cliente = models.ForeignKey(Cliente, related_name='pedidos', on_delete=models.SET_NULL, null=True, blank=True)
     cliente_nombre = models.CharField(max_length=200)
     # Es texto y no numero porque puede tener guiones, parentesis y el signo +.
     cliente_telefono = models.CharField(max_length=50)

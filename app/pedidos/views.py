@@ -20,14 +20,18 @@ from uuid import UUID
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.cache import never_cache
 from django.db import transaction
+from django.db.models import Q
+import re
 
 from menu.models import Hamburguesa, Adicional
 from config.models import Configuracion
 from inventario.models import formatear_cantidad
 
-from .models import Pedido, ItemPedido, AdicionalDeItem, HistorialEstado
+from .models import Cliente, Pedido, ItemPedido, AdicionalDeItem, HistorialEstado
+from .clientes import cliente_para_pedido, normalizar_telefono
 from .calculos import calcular_envio, calcular_total, descontar_stock, devolver_stock
 from .comanda import armar_comanda
 from .interpretar import interpretar_mensaje
@@ -60,6 +64,7 @@ def crear_pedido(request):
             distancia_km = Decimal(request.POST['distancia_km'].replace(',', '.'))
 
         pedido = Pedido.objects.create(
+            cliente=cliente_para_pedido(request.POST),
             cliente_nombre=request.POST.get('cliente_nombre', '').strip(),
             cliente_telefono=request.POST.get('cliente_telefono', '').strip(),
             cliente_direccion=request.POST.get('cliente_direccion', '').strip(),
@@ -115,6 +120,21 @@ def crear_pedido(request):
     })
 
 
+@never_cache
+@require_GET
+def buscar_clientes(request):
+    """Consulta local acotada; no crea clientes ni cambia pedidos."""
+    consulta = request.GET.get('q', '').strip()[:100]
+    if len(consulta) < 2:
+        return JsonResponse({'clientes': []})
+    filtro = Q(nombre__icontains=consulta)
+    digitos = re.sub(r'[^0-9]', '', consulta)
+    if len(digitos) >= 2:
+        filtro |= Q(telefono_clave__contains=digitos)
+    clientes = Cliente.objects.filter(filtro).values('id', 'nombre', 'telefono', 'direccion')[:8]
+    return JsonResponse({'clientes': list(clientes)})
+
+
 @require_POST
 def interpretar_mensaje_view(request):
     """
@@ -158,6 +178,14 @@ def validar_pedido(datos, retiro_local):
     """
     if not datos.get('cliente_nombre', '').strip():
         return 'Falta el nombre del cliente.'
+    for campo, limite in [('cliente_nombre', 200), ('cliente_telefono', 50), ('cliente_direccion', 300)]:
+        if len(datos.get(campo, '').strip()) > limite:
+            return f'El campo {campo.replace("cliente_", "")} admite hasta {limite} caracteres.'
+    if datos.get('cliente_telefono', '').strip() and not normalizar_telefono(datos['cliente_telefono']):
+        return 'Ingresá un teléfono de entre 7 y 20 dígitos; puede incluir espacios, + y guiones.'
+    elegido = datos.get('cliente_id', '')
+    if elegido and (not elegido.isascii() or not elegido.isdigit() or len(elegido) > 18 or not Cliente.objects.filter(pk=elegido).exists()):
+        return 'Ese cliente ya no está disponible. Buscalo otra vez o cargá un cliente nuevo.'
 
     filas = datos.getlist('filas[]')
     if not any(datos.get(f'hamburguesa_{fila}') for fila in filas):
