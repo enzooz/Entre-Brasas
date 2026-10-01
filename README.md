@@ -33,17 +33,21 @@ pasos en orden. Cada parte se puede leer sola.
 
 ### Antes de empezar: tres cosas que conviene saber
 
-**1. Todos los comandos de Django se corren desde la carpeta `app`**, con el
-entorno virtual activado. Te das cuenta de que esta activado porque la
-terminal muestra `(venv)` al principio de la linea.
+**1. Todos los comandos de Django se corren desde la carpeta `app`.** Esta
+guia usa PowerShell y llama directamente al Python del entorno
+con `.\venv\Scripts\python.exe`. No hace falta activar el entorno ni cambiar
+los permisos de ejecucion de PowerShell.
 
 **2. Los comandos cambian un poco segun el sistema operativo.** En esta guia
-estan los de Windows. Si usas Mac o Linux, cambia estos dos:
+estan los de Windows. Si usas Mac o Linux, usa estos equivalentes:
 
 | Para | Windows | Mac / Linux |
 |---|---|---|
-| Crear el entorno virtual | `python -m venv venv` | `python3 -m venv venv` |
-| Activar el entorno virtual | `venv\Scripts\activate` | `source venv/bin/activate` |
+| Crear el entorno virtual | `py -3.12 -m venv venv` | `python3.12 -m venv venv` |
+| Ejecutar Python del entorno | `.\venv\Scripts\python.exe` | `./venv/bin/python` |
+
+La aplicacion web se puede desarrollar en esos sistemas; el instalador,
+el acceso directo y el arranque con `iniciar.py` son especificos de Windows.
 
 **3. La base de datos no se comparte.** Es el archivo `app/db.sqlite3` y no
 se sube a GitHub. Cada uno tiene la suya, con sus propios datos de prueba.
@@ -57,70 +61,78 @@ migraciones (los archivos de las carpetas `migrations/`).
 Para cuando todavia no tenes el proyecto en tu computadora.
 
 **Requisitos:** tener instalados [Python](https://www.python.org/downloads/)
-3.10 o mas nuevo y [Git](https://git-scm.com/downloads). Para comprobarlo:
-```bash
-python --version
+**3.12** y [Git](https://git-scm.com/downloads). Es la version de Python con
+la que se verifico la suite del proyecto; no asumir que una mas nueva es
+compatible con todas las pruebas. Para comprobarlo:
+```powershell
+py -3.12 --version
 git --version
 ```
 Si alguno dice que no se reconoce el comando, instalalo primero. En Windows,
 al instalar Python marca la casilla **"Add python.exe to PATH"**.
 
+Para clonar un repositorio privado y subir tu rama, tu cuenta de GitHub debe
+tener el acceso correspondiente al repo. Si no lo tenes, pediselo al equipo.
+
 **Paso 1: descargar el repositorio.** Anda a la carpeta donde lo quieras
 guardar (por ejemplo el Escritorio) y corre:
-```bash
-git clone https://github.com/enzooz/Entre-Brasas.git
+```powershell
+git clone --branch master https://github.com/enzooz/Entre-Brasas.git
 ```
 
 **Paso 2: entrar a la carpeta de la aplicacion.**
-```bash
+```powershell
 cd Entre-Brasas/app
 ```
 
-**Paso 3: cambiarte a la rama en la que vas a trabajar** (si te dijeron una).
-Para ver las ramas que hay:
-```bash
-git branch -a
+**Paso 3: crear tu rama de trabajo desde master.** Cada desarrollador trabaja
+en su propia rama y propone los cambios mediante un Pull Request hacia
+`master`; no subas modificaciones directamente a `master`.
+```powershell
+git switch -c codex/mi-mejora
 ```
-Para cambiarte a una, por ejemplo `beta-nico`:
-```bash
-git checkout beta-nico
-```
+Reemplaza `mi-mejora` por un nombre que describa tu cambio. Si el equipo ya
+te asigno una rama, usa `git switch nombre-de-la-rama` en vez de crear otra.
 
 **Paso 4: crear el entorno virtual.** Es una carpeta `venv` donde se instala
 Django solo para este proyecto. Se hace una sola vez.
-```bash
-python -m venv venv
+```powershell
+py -3.12 -m venv venv
 ```
 
-**Paso 5: activarlo.**
-```bash
-venv\Scripts\activate
+**Paso 5: comprobar el Python del entorno.** No hace falta activarlo.
+```powershell
+.\venv\Scripts\python.exe --version
 ```
 
-**Paso 6: instalar Django.**
-```bash
-pip install -r requirements.txt
+**Paso 6: instalar las dependencias del proyecto.**
+```powershell
+.\venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
 **Paso 7: crear la base de datos.** Crea el archivo `db.sqlite3` con todas
 las tablas.
-```bash
-python manage.py migrate
+```powershell
+.\venv\Scripts\python.exe manage.py migrate
 ```
 
 **Paso 8: cargar los datos iniciales.** Carga el menu, los ingredientes,
-las recetas y la configuracion.
-```bash
-python manage.py seed_data
+las recetas y la configuracion, solo si la base todavia esta vacia. El stock
+inicial queda en 0; no trae pedidos ni datos de la PC del cliente.
+```powershell
+.\venv\Scripts\python.exe manage.py seed_data --si-esta-vacia
 ```
 
 **Paso 9: levantar el servidor.**
-```bash
-python manage.py runserver
+```powershell
+.\venv\Scripts\python.exe manage.py runserver
 ```
 
 Abri http://127.0.0.1:8000 en el navegador. Para apagar el servidor, en la
 terminal apreta `Ctrl + C`.
+
+Para desarrollar no uses `instalar.bat` ni el icono del cliente: esos usan
+otra base en AppData y no el servidor de desarrollo (ver parte 9).
 
 ---
 
@@ -128,44 +140,54 @@ terminal apreta `Ctrl + C`.
 
 Para cuando ya tenes el proyecto andando y otro del equipo subio cambios.
 
-**Paso 1: entrar a la carpeta y activar el entorno.**
-```bash
+**Paso 1: entrar a la carpeta y detener runserver si esta abierto.**
+```powershell
 cd Entre-Brasas/app
-venv\Scripts\activate
 ```
 
 **Paso 2: fijarte si tenes cambios sin guardar.**
-```bash
+```powershell
 git status
 ```
 Si aparecen archivos modificados, antes de traer lo nuevo guardalos con un
 commit (ver [parte 6](#6-subir-tus-cambios-push)), o apartalos
 temporalmente con:
-```bash
-git stash
+```powershell
+git stash push -u -m "Trabajo antes de actualizar"
 ```
 (Despues del pull los recuperas con `git stash pop`.)
 
-**Paso 3: traer los cambios.**
-```bash
-git pull
+**Paso 3: traer los cambios de tu rama.** Si ya tiene una rama remota:
+```powershell
+git pull --ff-only
 ```
+Esto actualiza la rama actual, no cambia automaticamente a `master`. Si tu
+rama es nueva y todavia no tiene rama remota, omiti ese pull. Para incorporar
+los cambios del equipo en `master` a tu rama de trabajo:
+```powershell
+git fetch origin
+git merge origin/master
+```
+Si aparecen conflictos, resolvelos y revisa el resultado antes de seguir.
+Si `pull --ff-only` indica que las ramas divergieron, no fuerces el push:
+coordina la integracion con el equipo. Para actualizar solo tu copia de
+`master`, con el trabajo guardado: `git switch master` y `git pull --ff-only`.
 
 **Paso 4: instalar dependencias nuevas**, por si alguien agrego alguna. Si
 no hay nada nuevo, no hace nada.
-```bash
-pip install -r requirements.txt
+```powershell
+.\venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
 **Paso 5: aplicar las migraciones nuevas.** Si alguien cambio la estructura
 de la base, esto actualiza la tuya. Tus datos no se borran.
-```bash
-python manage.py migrate
+```powershell
+.\venv\Scripts\python.exe manage.py migrate
 ```
 
 **Paso 6: levantar el servidor.**
-```bash
-python manage.py runserver
+```powershell
+.\venv\Scripts\python.exe manage.py runserver
 ```
 
 > **Importante:** despues de un pull se corre `migrate`, **no**
@@ -178,10 +200,9 @@ python manage.py runserver
 
 Para cuando ya esta todo instalado y solo queres usarlo.
 
-```bash
+```powershell
 cd Entre-Brasas/app
-venv\Scripts\activate
-python manage.py runserver
+.\venv\Scripts\python.exe manage.py runserver
 ```
 
 ---
@@ -208,8 +229,8 @@ su aplicacion. Por ejemplo, las tablas de pedidos estan en
 
 **Paso 4: generar la migracion.** Django compara los modelos con las
 migraciones que ya existen y escribe un archivo nuevo con la diferencia.
-```bash
-python manage.py makemigrations
+```powershell
+.\venv\Scripts\python.exe manage.py makemigrations
 ```
 Te va a mostrar algo como `pedidos/migrations/0003_...py`. Si te hace una
 pregunta (por ejemplo, que valor poner en las filas que ya existen para una
@@ -217,14 +238,15 @@ columna nueva obligatoria), responde o, mas facil, dale un `default` al
 campo en el modelo y volve a correrlo.
 
 **Paso 5: aplicarla a tu base.**
-```bash
-python manage.py migrate
+```powershell
+.\venv\Scripts\python.exe manage.py migrate
 ```
 
 **Paso 6: probar que el sistema ande.**
-```bash
-python manage.py check
-python manage.py runserver
+```powershell
+.\venv\Scripts\python.exe manage.py check
+.\venv\Scripts\python.exe manage.py test
+.\venv\Scripts\python.exe manage.py runserver
 ```
 
 **Paso 7: subir el modelo y la migracion juntos** (parte 6). El archivo de
@@ -232,21 +254,23 @@ la carpeta `migrations/` **tiene que ir en el commit**: es lo que les llega
 a los demas cuando hacen pull y corren `migrate`.
 
 **Para ver que migraciones tenes aplicadas:**
-```bash
-python manage.py showmigrations
+```powershell
+.\venv\Scripts\python.exe manage.py showmigrations
 ```
 
 **Si queres que un dato nuevo le aparezca a todos** (por ejemplo, una
 hamburguesa nueva en el menu de prueba), no alcanza con cargarlo en tu base,
 porque la base no se comparte. Hay que agregarlo en
 `app/menu/management/commands/seed_data.py`. Los demas lo reciben cuando
-corren `python manage.py seed_data` (se puede correr varias veces sin
-duplicar nada).
+corren `.\venv\Scripts\python.exe manage.py seed_data` (se puede correr varias
+veces sin duplicar nada; conserva registros existentes). Para actualizar
+productos ya cargados, usa una migracion de datos o una opcion explicita
+del comando, no edites la base del cliente.
 
 **Si la base conserva el menú de prueba anterior (BBQ, Clásica, etc.):**
-desde `app`, corré primero `python manage.py respaldar`, después
-`python manage.py migrate` y finalmente
-`python manage.py seed_data --reemplazar-menu`. Esta opción carga el menú real,
+desde `app`, corré primero `.\venv\Scripts\python.exe manage.py respaldar`, después
+`.\venv\Scripts\python.exe manage.py migrate` y finalmente
+`.\venv\Scripts\python.exe manage.py seed_data --reemplazar-menu`. Esta opción carga el menú real,
 actualiza sus precios y desactiva los productos anteriores sin borrar pedidos
 ni modificar el stock existente. El comando normal conserva los datos ya
 cargados; un `git pull` por sí solo no actualiza el menú de la base.
@@ -272,11 +296,11 @@ SQL. Esto no cambia la estructura, solo los datos de **tu** base.
 
 No hace falta instalar SQL Server ni ningun otro motor: SQLite es solo un
 archivo. Mientras edites datos, conviene tener el servidor apagado
-(`Ctrl + C`), porque SQLite bloquea el archivo mientras alguien escribe.
+(`Ctrl + C`), para evitar escrituras simultaneas sobre tu base de prueba.
 
 **Opcion B: con la consola de Django.**
-```bash
-python manage.py shell
+```powershell
+.\venv\Scripts\python.exe manage.py shell
 ```
 Y adentro, por ejemplo:
 ```python
@@ -289,37 +313,66 @@ Para salir: `exit()`.
 
 ### 6. Subir tus cambios (push)
 
-**Paso 1: ver que cambiaste.**
-```bash
+Trabaja en tu rama, no en `master`. Si todavia no creaste una, partiendo de
+`master` actualizado ejecuta `git switch -c codex/mi-mejora` antes de editar.
+
+**Paso 1: comprobar la rama y ver que cambiaste.**
+```powershell
+git branch --show-current
 git status
+git diff
 ```
 
-**Paso 2: agregar los archivos.** Podes agregarlos de a uno:
-```bash
+**Paso 2: revisar el sistema y las migraciones**, desde `app`:
+```powershell
+.\venv\Scripts\python.exe manage.py check
+.\venv\Scripts\python.exe manage.py makemigrations --check --dry-run
+.\venv\Scripts\python.exe manage.py test
+```
+Si cambiaste JavaScript, necesitas Node.js para ejecutar tambien estas pruebas
+desde `app` (no se necesita para instalar o usar la aplicacion):
+```powershell
+node --test entre_brasas/tests_estado_sistema.cjs pedidos/tests_borrador.cjs pedidos/tests_clientes.cjs pedidos/tests_envio.cjs
+```
+Proba tambien el flujo que modificaste en el navegador. Las pruebas de
+arranque del instalador solo se ejecutan en Windows.
+
+**Paso 3: agregar los archivos del cambio.** Podes agregarlos de a uno:
+```powershell
 git add ruta/del/archivo
 ```
-o todos juntos:
-```bash
-git add .
+Si estas dentro de `app`, las rutas son relativas a esa carpeta. Para incluir
+cambios de la raiz (por ejemplo README), usa su ruta, como `../README.md`.
+Antes de commitear, revisa exactamente lo que vas a subir:
+```powershell
+git diff --cached
 ```
-(`db.sqlite3` y `venv/` no se suben aunque uses `git add .`: estan en el
-`.gitignore`.)
+No subas bases, respaldos, entornos virtuales, claves ni datos del cliente.
+`*.sqlite3` y `venv/` estan excluidos por `.gitignore`; igualmente revisa
+la lista. Si modificaste modelos, inclui sus migraciones en el mismo commit.
 
-**Paso 3: hacer el commit** con un mensaje que diga que hiciste.
-```bash
+**Paso 4: hacer el commit** con un mensaje que diga que hiciste.
+```powershell
 git commit -m "feat: agregar campo email al pedido"
 ```
 
-**Paso 4: traer lo que hayan subido los demas** antes de subir lo tuyo.
-```bash
-git pull
+**Paso 5: incorporar los cambios de master**, manteniendote en tu rama:
+```powershell
+git fetch origin
+git merge origin/master
 ```
-Si trajo migraciones nuevas, corre `python manage.py migrate`.
+Si tu rama ya se comparte con otros, incorpora tambien sus cambios remotos
+(ver parte 2). Resolve los conflictos si aparecen, instala las dependencias
+y aplica las migraciones nuevas; despues repeti las pruebas.
 
-**Paso 5: subir.**
-```bash
-git push
+**Paso 6: subir tu rama.** Usa el nombre que elegiste (este es un ejemplo):
+```powershell
+git push -u origin codex/mi-mejora
 ```
+**Paso 7: abrir un Pull Request en GitHub**, con `master` como rama destino
+(`base`) y tu rama como origen (`compare`). Explica el cambio y las pruebas
+que hiciste. El equipo lo revisa y lo integra; no hagas push directo a
+`master` ni uses push forzado.
 
 ---
 
@@ -330,10 +383,10 @@ limpio. **Se pierden todos los datos de tu base** (a los demas no les pasa
 nada, porque cada uno tiene la suya).
 
 Con el servidor apagado, desde la carpeta `app`:
-```bash
-del db.sqlite3
-python manage.py migrate
-python manage.py seed_data
+```powershell
+Remove-Item -LiteralPath .\db.sqlite3
+.\venv\Scripts\python.exe manage.py migrate
+.\venv\Scripts\python.exe manage.py seed_data --si-esta-vacia
 ```
 (En Mac / Linux el primer comando es `rm db.sqlite3`.)
 
@@ -343,17 +396,18 @@ python manage.py seed_data
 
 | Error o sintoma | Que pasa | Solucion |
 |---|---|---|
-| `'python' no se reconoce como un comando` | Python no esta instalado o no esta en el PATH | Reinstalar Python marcando "Add python.exe to PATH". En Mac / Linux usar `python3` |
-| `No module named 'django'` | El entorno virtual no esta activado | `venv\Scripts\activate` (tiene que aparecer `(venv)`) |
-| `No module named 'whitenoise'` (o `waitress`) | Alguien agrego una dependencia y no la instalaste | `pip install -r requirements.txt` |
-| En PowerShell: `la ejecucion de scripts esta deshabilitada` al activar el entorno | PowerShell bloquea el script de activacion | Usar la terminal **cmd** en vez de PowerShell y correr `venv\Scripts\activate`. O no activar y correr todo con `venv\Scripts\python manage.py ...` |
-| `You have N unapplied migration(s)` al levantar el servidor | Alguien cambio la base y no aplicaste las migraciones | `python manage.py migrate` |
-| `no such table: ...` | La base no tiene esa tabla todavia | `python manage.py migrate` |
-| `Conflicting migrations detected` | Dos personas crearon migraciones al mismo tiempo | `python manage.py makemigrations --merge`, despues `python manage.py migrate`, y subir la migracion nueva |
+| `'py' no se reconoce` o `No suitable Python runtime found` | Falta Python 3.12 o el lanzador de Python | Instalar Python 3.12 con el lanzador y "Add python.exe to PATH"; comprobar `py -3.12 --version`. En Mac / Linux usar `python3.12` |
+| No se encuentra `.\venv\Scripts\python.exe` | No estas en `app` o no creaste el entorno | Entrar a `app` y ejecutar `py -3.12 -m venv venv` |
+| `No module named 'django'`, `whitenoise` o `waitress` | Estas usando otro Python o faltan dependencias | Usar `.\venv\Scripts\python.exe` e instalar con `.\venv\Scripts\python.exe -m pip install -r requirements.txt` |
+| En PowerShell: `la ejecucion de scripts esta deshabilitada` al activar el entorno | PowerShell bloquea el script de activacion | No activarlo: usar `.\venv\Scripts\python.exe manage.py ...`, como en esta guia |
+| `You have N unapplied migration(s)` al levantar el servidor | Alguien cambio la base y no aplicaste las migraciones | `.\venv\Scripts\python.exe manage.py migrate` |
+| `no such table: ...` | La base no tiene esa tabla todavia | `.\venv\Scripts\python.exe manage.py migrate` |
+| `Conflicting migrations detected` | Dos personas crearon migraciones al mismo tiempo | Coordinar con quienes modificaron los modelos; revisar las operaciones y, si son compatibles, usar `.\venv\Scripts\python.exe manage.py makemigrations --merge`, aplicar y subir la migracion |
 | `database is locked` | Otro programa tiene la base abierta | Cerrar DB Browser / DBeaver, o apagar el servidor, y volver a intentar |
-| `Error: That port is already in use` | Ya hay un servidor corriendo | Cerrar la otra terminal, o usar otro puerto: `python manage.py runserver 8001` |
-| `git pull` dice que tus cambios se sobrescribirian | Tenes cambios sin commitear | Hacer commit (parte 6) o `git stash`, despues `git pull` y `git stash pop` |
-| La pagina se ve vacia, sin hamburguesas ni ingredientes | La base no tiene datos iniciales | `python manage.py seed_data` |
+| `Error: That port is already in use` | Ya hay un servidor corriendo | Detenerlo con `Ctrl + C`, o usar otro puerto: `.\venv\Scripts\python.exe manage.py runserver 8001` |
+| `git pull` dice que tus cambios se sobrescribirian | Tenes cambios sin commitear | Guardarlos como en la parte 2 y usar `git pull --ff-only`; recuperar el stash y resolver conflictos si aparecen |
+| `git pull --ff-only` indica que las ramas divergieron | Hay commits distintos en local y remoto | Coordinar la integracion con el equipo; no usar push forzado |
+| La pagina se ve vacia, sin hamburguesas ni ingredientes | La base no tiene datos iniciales | `.\venv\Scripts\python.exe manage.py seed_data --si-esta-vacia` |
 
 ---
 
@@ -368,11 +422,11 @@ local del cliente" (ver `PRODUCCION` en `app/entre_brasas/settings.py`):
 
 | | En desarrollo (nosotros) | En la compu del cliente |
 |---|---|---|
-| Como se abre | `python manage.py runserver` | Icono del escritorio (`pythonw.exe iniciar.py`, sin consola) |
+| Como se abre | `.\venv\Scripts\python.exe manage.py runserver` | Icono del escritorio (`pythonw.exe iniciar.py`, sin consola) |
 | Direccion | http://127.0.0.1:8000 | http://127.0.0.1:8765 |
 | Base de datos | `app/db.sqlite3` | `C:\Users\<usuario>\AppData\Local\EntreBrasas\db.sqlite3` |
 | Si hay un error | Pantalla con el detalle (`DEBUG` activado) | Mensaje normal; el detalle queda en `errores.log`, en la misma carpeta que la base |
-| Copias de seguridad | A mano, con `python manage.py respaldar` | Automaticas cada vez que se abre, en `Documentos\Entre Brasas - Copias de seguridad` (quedan las ultimas 30) |
+| Copias de seguridad | A mano, con `.\venv\Scripts\python.exe manage.py respaldar` | Automaticas cada vez que se abre, en `Documentos\Entre Brasas - Copias de seguridad` (quedan las ultimas 30) |
 
 La base esta fuera de la carpeta del programa a proposito: asi se puede
 reemplazar el programa por una version nueva sin tocar los pedidos del
