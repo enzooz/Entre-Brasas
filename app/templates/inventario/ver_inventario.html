@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Inventario - Entre Brasas{% endblock %}
+{% block encabezado %}Inventario{% endblock %}
+
+{% block contenido %}
+<div class="section-toolbar"><p>Ingredientes de las hamburguesas activas y sus adicionales. Actualizá las cantidades cuando recibís mercadería o contás la cocina.</p><a href="{% url 'inventario:registrar_movimiento' %}" class="btn btn-primary">{% include 'components/icon.html' with nombre='plus' %}Registrar movimiento</a></div>
+
+{# Aparece si hay ingredientes en 0 o en negativo: los pedidos nunca se #}
+{# frenan por stock, asi que el numero puede no ser real hasta que se cuente. #}
+{% if sin_contar %}
+<div class="alerta alerta-info">
+    <strong>{{ sin_contar|length }} ingrediente{{ sin_contar|length|pluralize }} en 0 o en negativo.</strong>
+    Todavia no se cargo el stock real, o se uso mas de lo que estaba cargado.
+    Conta lo que hay en la cocina y cargalo con
+    <a href="{% url 'inventario:registrar_movimiento' %}">Registrar movimiento</a> &rarr; Conteo.
+</div>
+{% endif %}
+
+{# Este aviso aparece solo si hay ingredientes por debajo del minimo. #}
+{% if faltantes %}
+<div class="alerta alerta-warning">
+    <strong>Hay que reponer:</strong>
+    {% for ingrediente in faltantes %}
+        {{ ingrediente.nombre }} ({{ ingrediente.stock_actual }} {{ ingrediente.unidad }}){% if not forloop.last %}, {% endif %}
+    {% endfor %}
+</div>
+{% endif %}
+
+<table>
+    <thead>
+        <tr>
+            <th>Ingrediente</th>
+            <th>Stock actual</th>
+            <th>Stock minimo</th>
+            <th>Precio de compra</th>
+            <th>Estado</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for ingrediente in ingredientes %}
+        <tr>
+            <td>{{ ingrediente.nombre }}</td>
+            {# En negativo va en rojo: se uso mas de lo que habia cargado. #}
+            <td{% if ingrediente.stock_actual < 0 %} class="stock-negativo"{% endif %}>{{ ingrediente.stock_actual }} {{ ingrediente.unidad }}</td>
+            <td>{{ ingrediente.stock_minimo }} {{ ingrediente.unidad }}</td>
+            <td>${{ ingrediente.precio_compra }}</td>
+            <td>
+                {# stock_bajo es la property del modelo Ingrediente #}
+                {% if ingrediente.stock_bajo %}
+                    <span class="badge badge-cancelado">Reponer</span>
+                {% else %}
+                    <span class="badge badge-entregado">OK</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5">El menú activo todavía no tiene ingredientes asociados. Completá las <a href="{% url 'inventario:ver_recetas' %}">recetas</a> para ver su stock acá.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

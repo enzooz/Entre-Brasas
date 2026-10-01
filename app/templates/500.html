@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{# Django muestra esta pantalla cuando algo falla en el sistema, pero solo #}
+{# con DEBUG apagado (en la compu del cliente). El detalle del error queda #}
+{# anotado en errores.log, en la carpeta de datos (ver settings.py). #}
+
+{% block titulo %}Ocurrio un error - Entre Brasas{% endblock %}
+{% block encabezado %}Ocurrio un error{% endblock %}
+
+{% block contenido %}
+<div class="empty-state">
+    <p>Algo salio mal y no se pudo completar la operacion.</p>
+    <p>Proba de nuevo. Si vuelve a pasar, avisale a quien te instalo el sistema.</p>
+    <p><a href="{% url 'pedidos:crear_pedido' %}" class="btn btn-primary">Volver al inicio</a></p>
+</div>
+{% endblock %}

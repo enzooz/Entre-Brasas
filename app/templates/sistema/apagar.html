@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block titulo %}Apagar sistema - Entre Brasas{% endblock %}
+{% block encabezado %}{% if apagado %}Entre Brasas se está apagando{% else %}¿Apagar Entre Brasas?{% endif %}{% endblock %}
+{% block contenido %}
+<section class="shutdown-panel">
+    {% if apagado %}
+    <h2>Ya podés cerrar esta pestaña</h2>
+    <p>El servidor está cerrando. Los pedidos guardados quedan en la base de datos.</p>
+    <p>Para volver a trabajar, abrí el icono <strong>Entre Brasas</strong> del escritorio. La computadora sigue encendida.</p>
+    {% elif no_disponible %}
+    <h2>El control de apagado no está disponible</h2>
+    <p>Esta instancia no se abrió desde el iniciador de Entre Brasas o ya está cerrando.</p>
+    <a class="btn btn-secondary" href="{% url 'inicio' %}">Volver al inicio</a>
+    {% else %}
+    <h2>Terminá de guardar antes de apagar</h2>
+    <p>El sistema se cerrará para todas las pestañas abiertas. Los pedidos guardados se conservan; los formularios sin guardar pueden perderse.</p>
+    <p>Para abrirlo de nuevo, usá el icono <strong>Entre Brasas</strong> del escritorio. Esto no apaga la computadora.</p>
+    <form method="post" class="shutdown-actions">
+        {% csrf_token %}
+        <a class="btn btn-secondary" href="{% url 'inicio' %}">Seguir trabajando</a>
+        <button class="btn btn-danger" type="submit">Sí, apagar sistema</button>
+    </form>
+    {% endif %}
+</section>
+{% endblock %}

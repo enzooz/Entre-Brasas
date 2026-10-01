@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{# Django muestra esta pantalla cuando se entra a una direccion que no #}
+{# existe, pero solo con DEBUG apagado (en la compu del cliente). #}
+
+{% block titulo %}Pagina no encontrada - Entre Brasas{% endblock %}
+{% block encabezado %}Pagina no encontrada{% endblock %}
+
+{% block contenido %}
+<div class="empty-state">
+    <p>La pantalla que buscas no existe o el pedido ya no esta.</p>
+    <p><a href="{% url 'pedidos:crear_pedido' %}" class="btn btn-primary">Volver al inicio</a></p>
+</div>
+{% endblock %}

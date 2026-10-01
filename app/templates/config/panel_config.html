@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Configuracion - Entre Brasas{% endblock %}
+{% block encabezado %}Configuracion del sistema{% endblock %}
+
+{% block contenido %}
+
+<div class="alerta alerta-info">
+    Estos valores los usa el sistema para calcular el costo del envio de cada
+    pedido y el costo de preparar cada hamburguesa.
+</div>
+
+{% if form.errors %}
+<div class="alerta alerta-error">Revisa los datos marcados abajo.</div>
+{% endif %}
+
+<form method="POST">
+    {% csrf_token %}
+
+    <div class="card">
+        <h2>Envío</h2>
+        <p>
+            {{ form.tarifa_100m.label_tag }}
+            {{ form.tarifa_100m }}
+            {{ form.tarifa_100m.errors }}
+            <small id="ayudaTarifa">0,1 km = 100 metros. Un envío de 5,4 km suma 54 veces esta tarifa al envío mínimo, sin redondear los kilómetros.</small>
+        </p>
+        <p>
+            {{ form.distancia_minima.label_tag }}
+            {{ form.distancia_minima }}
+            {{ form.distancia_minima.errors }}
+            <small>Por debajo de esta distancia el envío es gratis. Usá hasta un decimal: 0,1 km son 100 metros.</small>
+        </p>
+        <p>
+            {{ form.costo_minimo_envio.label_tag }}
+            {{ form.costo_minimo_envio }}
+            {{ form.costo_minimo_envio.errors }}
+            <small id="ayudaEnvioMinimo">Se suma a la tarifa por distancia cuando el envío no es gratis. Ejemplo: mínimo $1.000 + tarifa por distancia $2.700 = envío $3.700.</small>
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>Mano de obra</h2>
+        <p>
+            {{ form.costo_hora_mano_obra.label_tag }}
+            {{ form.costo_hora_mano_obra }}
+            {{ form.costo_hora_mano_obra.errors }}
+            <small>Se usa en la pantalla de costos.</small>
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>Cocina</h2>
+        <p>
+            <label for="{{ form.whatsapp_cocina.id_for_label }}">WhatsApp de la cocina</label>
+            {{ form.whatsapp_cocina }}
+            {{ form.whatsapp_cocina.errors }}
+            <small>
+                El numero del celular de la cocina, con 549 y la caracteristica,
+                sin el 0 ni el 15. Si lo cargas, cada pedido tiene un boton que
+                abre WhatsApp con la comanda ya escrita. Si la cocina usa un
+                grupo, dejalo vacio y usa el boton "Copiar".
+            </small>
+        </p>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Guardar configuracion</button>
+    </div>
+</form>
+
+{% endblock %}

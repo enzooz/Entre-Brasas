@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Cola de pedidos - Entre Brasas{% endblock %}
+{% block encabezado %}Pedidos en curso{% endblock %}
+{% block header_actions %}<a href="{% url 'pedidos:crear_pedido' %}" class="btn btn-primary">{% include 'components/icon.html' with nombre='plus' %}Tomar un pedido</a>{% endblock %}
+
+{% block contenido %}
+
+<div class="flow-help" aria-label="Estados del pedido"><span class="badge badge-pendiente">Pendiente</span>{% include 'components/icon.html' with nombre='chevron' %}<span class="badge badge-en_preparacion">En preparación</span>{% include 'components/icon.html' with nombre='chevron' %}<span class="badge badge-en_camino">En camino</span>{% include 'components/icon.html' with nombre='chevron' %}<span class="badge badge-entregado">Entregado</span></div>
+
+{# Los filtros se mandan por GET: quedan en la direccion del navegador, #}
+{# asi se puede recargar o guardar la busqueda. #}
+<form method="GET" class="filter-bar">
+    <input type="text" name="busqueda" class="form-control" aria-label="Buscar por cliente"
+           placeholder="Buscar por cliente" value="{{ busqueda }}">
+
+    <select name="estado" class="form-control" aria-label="Filtrar por estado">
+        <option value="">Todos los estados</option>
+        {% for valor, texto in estados %}
+            {% if valor != 'entregado' and valor != 'cancelado' %}
+            <option value="{{ valor }}" {% if estado == valor %}selected{% endif %}>{{ texto }}</option>
+            {% endif %}
+        {% endfor %}
+    </select>
+
+    <button type="submit" class="btn btn-primary">Filtrar</button>
+    <a href="{% url 'pedidos:cola_pedidos' %}" class="btn btn-secondary">Limpiar</a>
+</form>
+
+<div class="queue-grid">
+{% for pedido in pedidos %}
+<div class="card order-card card-{{ pedido.estado }}">
+    <h2>Pedido #{{ pedido.pk }} - {{ pedido.cliente_nombre }}</h2>
+
+    <p>
+        <span class="badge badge-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span>
+        {{ pedido.fecha_creacion|date:"d/m/Y H:i" }}
+    </p>
+
+    {% if pedido.retiro_local %}
+    <p>Retira en el local</p>
+    {% else %}
+    {% include 'pedidos/_direccion.html' %}
+    <p>Tel: {{ pedido.cliente_telefono }}</p>
+    {% endif %}
+
+    {# La comanda muestra lo mismo que le llega a la cocina: "1 Crispy doble", notas, etc. #}
+    <div class="texto-comanda">{{ pedido.comanda }}</div>
+    <textarea id="comanda-{{ pedido.pk }}" hidden readonly>{{ pedido.comanda }}</textarea>
+
+    <p class="total-highlight">Total: ${{ pedido.total }}</p>
+
+    <div class="order-actions">
+        <a href="{% url 'pedidos:detalle_pedido' pedido.pk %}" class="btn btn-secondary">Ver detalle</a>
+        <button type="button" class="btn btn-secondary" data-comanda="comanda-{{ pedido.pk }}"
+                onclick="copiarComanda(this)">Copiar comanda</button>
+
+        {# Avanzar cambia datos, asi que va por POST y no por link. #}
+        {# El boton toma el color del estado al que pasa el pedido. #}
+        <form method="POST" action="{% url 'pedidos:avanzar_pedido' pedido.pk %}" class="form-boton">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-{{ pedido.siguiente_estado }}">
+                {% if pedido.estado == 'pendiente' %}Empezar preparación{% elif pedido.estado == 'en_preparacion' %}Marcar en camino{% else %}Marcar entregado{% endif %}
+            </button>
+        </form>
+    </div>
+</div>
+{% empty %}
+<div class="empty-state">
+    <h2>{% if busqueda or estado %}No encontramos pedidos con esos filtros{% else %}La cocina está al día{% endif %}</h2>
+    <p>{% if busqueda or estado %}Probá con otro cliente o limpiá los filtros para ver todos los pedidos.{% else %}Tomá un pedido y seguí su preparación desde acá.{% endif %}</p>
+    {% if busqueda or estado %}<a href="{% url 'pedidos:cola_pedidos' %}" class="btn btn-secondary">Limpiar filtros</a>{% endif %}
+    <a href="{% url 'pedidos:crear_pedido' %}" class="btn btn-primary">Cargar un pedido</a>
+</div>
+{% endfor %}
+</div>
+
+<script src="/static/js/comanda.js"></script>
+{% endblock %}

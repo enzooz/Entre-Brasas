@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Hamburguesas - Entre Brasas{% endblock %}
+{% block encabezado %}Hamburguesas{% endblock %}
+
+{% block contenido %}
+<div class="section-toolbar"><p>Solo las hamburguesas activas del menú. Las desactivadas se conservan en el historial.</p><a href="{% url 'menu:crear_hamburguesa' %}" class="btn btn-primary">{% include 'components/icon.html' with nombre='plus' %}Nueva hamburguesa</a></div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Descripcion</th>
+            <th>Precio</th>
+            <th>Papas</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {# for recorre la lista que le paso la vista #}
+        {% for hamburguesa in hamburguesas %}
+        <tr>
+            <td>{{ hamburguesa.nombre }}</td>
+            <td>{{ hamburguesa.descripcion }}</td>
+            <td>${{ hamburguesa.precio }}</td>
+            <td>{% if hamburguesa.incluye_papas %}Si{% else %}No{% endif %}</td>
+            <td>
+                <span class="badge badge-entregado">Activa</span>
+            </td>
+            <td>
+                <a href="{% url 'menu:editar_hamburguesa' hamburguesa.pk %}" class="btn btn-info">Editar</a>
+                <a href="{% url 'menu:activar_hamburguesa' hamburguesa.pk %}" class="btn btn-warning">
+                    Desactivar
+                </a>
+            </td>
+        </tr>
+        {# empty se muestra solo si la lista vino vacia #}
+        {% empty %}
+        <tr>
+            <td colspan="6">No hay hamburguesas activas. Agregá una para tomar pedidos.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Pedido #{{ pedido.pk }} - Entre Brasas{% endblock %}
+{% block encabezado %}Pedido #{{ pedido.pk }}{% endblock %}
+
+{% block contenido %}
+<a href="{% url 'pedidos:cola_pedidos' %}" class="back-link">&laquo; Volver a la cola</a>
+
+{# El mensaje para la cocina, armado por pedidos/comanda.py. Va primero #}
+{# porque al crear un pedido se llega aca para mandarselo a la cocina.   #}
+<div class="card card-comanda">
+    <h2>Comanda para cocina</h2>
+    <div class="texto-comanda">{{ comanda }}</div>
+    <textarea id="comanda-{{ pedido.pk }}" hidden readonly>{{ comanda }}</textarea>
+
+    <div class="acciones-comanda">
+        {% if link_whatsapp %}
+        <a href="{{ link_whatsapp }}" target="_blank" rel="noopener" class="btn btn-whatsapp">Enviar a cocina por WhatsApp</a>
+        {% endif %}
+        <button type="button" class="btn btn-secondary" data-comanda="comanda-{{ pedido.pk }}"
+                onclick="copiarComanda(this)">Copiar</button>
+        <a href="{% url 'pedidos:crear_pedido' %}" class="btn btn-primary">Cargar otro pedido</a>
+    </div>
+
+    {% if not link_whatsapp %}
+    <p><small>
+        Para enviarla con un clic, carga el WhatsApp de la cocina en
+        <a href="{% url 'config:panel_config' %}">Configuracion</a>.
+    </small></p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>Cliente</h2>
+    <p><strong>{{ pedido.cliente_nombre }}</strong></p>
+    {% if pedido.retiro_local %}
+    <p>Retira en el local</p>
+    {% else %}
+    <p>Telefono: {{ pedido.cliente_telefono }}</p>
+    {% include 'pedidos/_direccion.html' %}
+    {% endif %}
+    {% if pedido.observaciones %}
+    <p>Observaciones: {{ pedido.observaciones }}</p>
+    {% endif %}
+    <p>
+        Estado:
+        <span class="badge badge-{{ pedido.estado }}">{{ pedido.get_estado_display }}</span>
+    </p>
+    <p>Fecha: {{ pedido.fecha_creacion|date:"d/m/Y H:i" }}</p>
+</div>
+
+<div class="card">
+    <h2>Productos</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Cantidad</th>
+                <th>Hamburguesa</th>
+                <th>Adicionales</th>
+                <th>Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in pedido.items.all %}
+            <tr>
+                <td>{{ item.cantidad }}</td>
+                <td>
+                    {{ item.hamburguesa.nombre }} (${{ item.precio_unitario }} c/u)
+                    {% if item.nota %}<br><span class="item-nota">Nota: {{ item.nota }}</span>{% endif %}
+                </td>
+                <td>
+                    {% for adicional in item.adicionales.all %}
+                        {{ adicional.adicional.nombre }} (${{ adicional.precio }})<br>
+                    {% empty %}
+                        Sin adicionales
+                    {% endfor %}
+                </td>
+                {# subtotal es la property que calculamos en el modelo #}
+                <td>${{ item.subtotal }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>Totales</h2>
+    <div class="cost-summary">
+        <p>Hamburguesas: ${{ total_hamburguesas }}</p>
+        <p>Adicionales: ${{ total_adicionales }}</p>
+        <p>
+            Envio: ${{ pedido.costo_envio }}
+            {% if pedido.retiro_local %}
+                (retira en el local)
+            {% else %}
+                ({{ pedido.distancia_km }} km)
+            {% endif %}
+        </p>
+        <p>Metodo de pago: {{ pedido.get_metodo_pago_display }}</p>
+        <p class="total-highlight">TOTAL: ${{ pedido.total }}</p>
+    </div>
+</div>
+
+{# Las acciones solo tienen sentido si el pedido sigue abierto. #}
+{% if pedido.estado != 'entregado' and pedido.estado != 'cancelado' %}
+<div class="card">
+    <h2>Acciones</h2>
+
+    <form method="POST" action="{% url 'pedidos:avanzar_pedido' pedido.pk %}" class="form-boton">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-{{ pedido.siguiente_estado }}">
+            {% if pedido.estado == 'pendiente' %}Empezar preparación{% elif pedido.estado == 'en_preparacion' %}Marcar en camino{% else %}Marcar entregado{% endif %}
+        </button>
+    </form>
+
+    <hr>
+
+    <form method="POST" action="{% url 'pedidos:cancelar_pedido' pedido.pk %}">
+        {% csrf_token %}
+
+        <p>
+            <label>Motivo de la cancelacion</label>
+            <input type="text" name="motivo" class="form-control">
+        </p>
+
+        {# Solo se puede devolver stock si el pedido llego a descontarlo. #}
+        {% if pedido.estado == 'en_preparacion' or pedido.estado == 'en_camino' %}
+        <p>
+            <label>
+                <input type="checkbox" name="devolver_stock" value="si">
+                Devolver los ingredientes al inventario
+            </label>
+        </p>
+        {% endif %}
+
+        <button type="submit" class="btn btn-danger">Cancelar pedido</button>
+    </form>
+</div>
+{% endif %}
+
+<div class="card">
+    <h2>Historial de estados</h2>
+    <ul>
+        {# Del cambio mas nuevo al mas viejo. El ultimo renglon es la carga #}
+        {# del pedido, que no es un cambio de estado pero es donde empieza todo. #}
+        {% for cambio in pedido.historial.all %}
+        <li>
+            {{ cambio.fecha|date:"d/m/Y H:i" }} -
+            <span class="badge badge-{{ cambio.estado_anterior }}">{{ cambio.get_estado_anterior_display }}</span>
+            &rarr;
+            <span class="badge badge-{{ cambio.estado_nuevo }}">{{ cambio.get_estado_nuevo_display }}</span>
+            {% if cambio.observacion %} ({{ cambio.observacion }}){% endif %}
+        </li>
+        {% endfor %}
+        <li>
+            {{ pedido.fecha_creacion|date:"d/m/Y H:i" }} - Pedido cargado como
+            <span class="badge badge-pendiente">Pendiente</span>
+        </li>
+    </ul>
+</div>
+
+<script src="/static/js/comanda.js"></script>
+{% endblock %}

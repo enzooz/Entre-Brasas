@@ -1,0 +1,953 @@
+/* ========================================
+   ENTRE BRASAS - Estilos
+   Paleta: Azul oscuro (#003399) + Blanco
+   ======================================== */
+
+/* Variables de color */
+:root {
+    --primary: #003399;
+    --primary-dark: #002266;
+    --primary-light: #3366CC;
+    --accent: #FF6600;
+    --accent-dark: #CC5200;
+    --accent-light: #FF8533;
+    --bg-dark: #001A4D;
+    --bg-sidebar: #002266;
+    --bg-main: #F0F4F8;
+    --bg-white: #FFFFFF;
+    --text-dark: #1A1A2E;
+    --text-light: #5A6A7A;
+    --text-white: #FFFFFF;
+    --border: #D0D8E0;
+    --success: #28A745;
+    --warning: #FFC107;
+    --danger: #DC3545;
+    --info: #17A2B8;
+
+    /* Un color por estado del pedido. Se usa en las etiquetas, en el borde
+       de las tarjetas y en el boton que pasa el pedido a ese estado. */
+    --estado-pendiente: var(--warning);       /* amarillo */
+    --estado-en_preparacion: var(--info);     /* turquesa */
+    --estado-en_camino: var(--accent);        /* naranja */
+    --estado-entregado: var(--success);       /* verde */
+    --estado-cancelado: var(--danger);        /* rojo */
+}
+
+/* Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-dark);
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar */
+nav {
+    width: 260px;
+    background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: var(--text-white);
+    padding: 0;
+    position: fixed;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+nav .logo {
+    text-align: center;
+    padding: 25px 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 3px solid var(--accent);
+}
+
+nav .logo h2 {
+    color: var(--text-white);
+    font-size: 1.6rem;
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+nav ul {
+    list-style: none;
+    padding: 15px 0;
+}
+
+nav ul li {
+    margin: 2px 0;
+}
+
+nav ul li a {
+    display: block;
+    padding: 14px 25px;
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+    font-size: 0.95rem;
+}
+
+nav ul li a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-left-color: var(--accent);
+    color: var(--text-white);
+}
+
+/* Main content */
+main {
+    margin-left: 260px;
+    flex: 1;
+    padding: 0;
+}
+
+/* Header */
+header {
+    background: var(--bg-white);
+    padding: 25px 30px;
+    border-bottom: 4px solid var(--primary);
+    box-shadow: 0 2px 8px rgba(0, 51, 153, 0.1);
+}
+
+header h1 {
+    color: var(--primary);
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+/* Content area */
+.contenido {
+    padding: 25px;
+}
+
+/* Mensajes de Django */
+.mensajes {
+    padding: 15px 25px 0 25px;
+}
+
+.alerta {
+    padding: 12px 18px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.alerta-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.alerta-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.alerta-warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+.alerta-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+/* Links */
+a {
+    color: var(--primary);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+a:hover {
+    color: var(--primary-dark);
+    text-decoration: underline;
+}
+
+/* Forms */
+form {
+    background: var(--bg-white);
+    padding: 25px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border);
+}
+
+form > div {
+    margin-bottom: 18px;
+}
+
+form label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: var(--text-dark);
+    font-size: 0.9rem;
+}
+
+form input[type="text"],
+form input[type="number"],
+form input[type="date"],
+form select,
+form textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    background: var(--bg-white);
+}
+
+form input:focus,
+form select:focus,
+form textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 51, 153, 0.15);
+}
+
+/* Buttons */
+button, .btn {
+    padding: 11px 22px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: inline-block;
+    text-decoration: none;
+}
+
+/* Los submit son azules por defecto. El :where() le baja la prioridad a
+   esa regla, asi un boton con su propio color (btn-danger, btn-en_camino)
+   lo respeta. Sin esto "Cancelar pedido" salia azul en vez de rojo. */
+:where(button[type="submit"]), .btn-primary {
+    background-color: var(--primary);
+    color: var(--text-white);
+}
+
+:where(button[type="submit"]):hover, .btn-primary:hover {
+    background-color: var(--primary-dark);
+    box-shadow: 0 2px 6px rgba(0, 51, 153, 0.3);
+}
+
+.btn-secondary {
+    background-color: #6C757D;
+    color: var(--text-white);
+}
+
+.btn-secondary:hover {
+    background-color: #5A6268;
+}
+
+.btn-success {
+    background-color: var(--success);
+    color: var(--text-white);
+}
+
+.btn-success:hover {
+    background-color: #218838;
+}
+
+.btn-danger {
+    background-color: var(--danger);
+    color: var(--text-white);
+}
+
+.btn-danger:hover {
+    background-color: #C82333;
+}
+
+.btn-info {
+    background-color: var(--info);
+    color: var(--text-white);
+}
+
+.btn-info:hover {
+    background-color: #138496;
+}
+
+.btn-warning {
+    background-color: var(--warning);
+    color: var(--text-dark);
+}
+
+.btn-warning:hover {
+    background-color: #E0A800;
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-white);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+}
+
+th {
+    background: var(--primary);
+    color: var(--text-white);
+    padding: 14px 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+tr:hover {
+    background-color: rgba(0, 51, 153, 0.04);
+}
+
+tr:nth-child(even) {
+    background-color: #F8FAFC;
+}
+
+/* Headings */
+h2 {
+    color: var(--primary);
+    margin: 25px 0 15px 0;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--border);
+    font-size: 1.3rem;
+}
+
+h3 {
+    color: var(--text-dark);
+    margin: 15px 0 10px 0;
+    font-size: 1.1rem;
+}
+
+/* Cards */
+.card {
+    background: var(--bg-white);
+    border-radius: 8px;
+    padding: 22px;
+    margin-bottom: 18px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border);
+    border-left: 5px solid var(--primary);
+}
+
+/* Los nombres de estas clases tienen que coincidir con los valores de
+   Pedido.ESTADOS, porque los templates las arman asi: card-{{ pedido.estado }} */
+.card-pendiente {
+    border-left-color: var(--estado-pendiente);
+}
+
+.card-en_preparacion {
+    border-left-color: var(--estado-en_preparacion);
+}
+
+.card-en_camino {
+    border-left-color: var(--estado-en_camino);
+}
+
+.card-entregado {
+    border-left-color: var(--estado-entregado);
+}
+
+.card-cancelado {
+    border-left-color: var(--estado-cancelado);
+}
+
+/* Status badges */
+.badge {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Etiqueta (badge-) y boton de avanzar (btn-) comparten el color del estado.
+   El boton toma el color del estado AL QUE pasa el pedido. */
+.badge-pendiente, .btn-pendiente {
+    background-color: var(--estado-pendiente);
+    color: var(--text-dark);
+}
+
+.badge-en_preparacion, .btn-en_preparacion {
+    background-color: var(--estado-en_preparacion);
+    color: var(--text-white);
+}
+
+.badge-en_camino, .btn-en_camino {
+    background-color: var(--estado-en_camino);
+    color: var(--text-white);
+}
+
+.badge-entregado, .btn-entregado {
+    background-color: var(--estado-entregado);
+    color: var(--text-white);
+}
+
+.badge-cancelado, .btn-cancelado {
+    background-color: var(--estado-cancelado);
+    color: var(--text-white);
+}
+
+/* Al pasar el mouse por un boton de estado, solo se oscurece un poco. */
+.btn-en_preparacion:hover,
+.btn-en_camino:hover,
+.btn-entregado:hover {
+    filter: brightness(0.9);
+}
+
+/* Alert for low stock */
+.highlight {
+    background-color: #FFF3CD !important;
+}
+
+/* Filter bar */
+.filter-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 22px;
+    padding: 18px;
+    background: var(--bg-white);
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    flex-wrap: wrap;
+    align-items: flex-end;
+    border: 1px solid var(--border);
+}
+
+.filter-bar > div {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-bar label {
+    font-size: 0.8rem;
+    margin-bottom: 6px;
+    color: var(--text-light);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.filter-bar input,
+.filter-bar select {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.filter-bar input:focus,
+.filter-bar select:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+/* Los filtros se reparten todo el ancho de la barra. El buscador de texto
+   se lleva la parte mas grande (flex: 3), los demas campos una parte cada
+   uno y los botones solo lo que ocupan. Si no entran, bajan a otra fila. */
+.filter-bar > * {
+    flex: 1 1 140px;
+    margin-bottom: 0;
+}
+
+.filter-bar > input[type="text"] {
+    flex: 3 1 180px;
+}
+
+/* Que el selector no se achique tanto que se corte el texto. */
+.filter-bar > select {
+    min-width: 200px;
+}
+
+.filter-bar > .btn,
+.filter-bar > button {
+    flex: 0 0 auto;
+}
+
+/* Un form que es solo un boton (por ejemplo "Avanzar estado"). Sin esto
+   heredaria el fondo, el borde y el padding de los formularios. */
+form.form-boton {
+    background: none;
+    padding: 0;
+    margin: 0;
+    border: none;
+    box-shadow: none;
+}
+
+/* Order queue specific */
+.order-card {
+    margin-bottom: 15px;
+}
+
+.order-card h2 {
+    margin-top: 0;
+}
+
+/* En la cola el total va como texto: el naranja queda reservado para
+   el estado "En camino". */
+.order-card .total-highlight {
+    background: none;
+    color: var(--text-dark);
+    font-size: 1.2rem;
+    text-align: left;
+    padding: 0;
+    margin-top: 10px;
+}
+
+/* Ver detalle y Avanzar estado: los dos botones del mismo tamano,
+   repartiendose el ancho de la tarjeta. */
+.order-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+}
+
+.order-actions > * {
+    flex: 1;
+}
+
+.order-actions .btn {
+    width: 100%;
+    text-align: center;
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 50px 30px;
+    color: var(--text-light);
+    background: var(--bg-white);
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border);
+}
+
+/* Product item in create order */
+.producto-item {
+    background: #F8FAFC;
+    padding: 18px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border: 1px solid var(--border);
+}
+
+.producto-item > * {
+    margin-bottom: 12px;
+}
+
+.addons-container {
+    padding-left: 15px;
+}
+
+.addons-container label {
+    display: inline;
+    margin-right: 18px;
+    font-weight: normal;
+    font-size: 0.9rem;
+}
+
+/* El atributo hidden tiene que ganarle a cualquier display de otra regla
+   (por ejemplo, un selector con display: flex que se esconde por JS). */
+[hidden] {
+    display: none !important;
+}
+
+/* ---------- Nuevo pedido: carga rapida ---------- */
+
+/* Los botones del menu: uno por hamburguesa, se reparten en columnas. */
+.menu-botones {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.boton-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 12px 14px;
+    background: var(--bg-white);
+    color: var(--text-dark);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-align: left;
+}
+
+.boton-menu:hover {
+    background: #EEF3FB;
+    border-color: var(--primary);
+}
+
+.boton-menu:active {
+    transform: scale(0.98);
+}
+
+.boton-menu-nombre {
+    font-size: 1rem;
+}
+
+.boton-menu-precio {
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: var(--text-light);
+}
+
+.sin-productos {
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+/* Una fila por hamburguesa agregada. */
+.fila-producto {
+    background: #F8FAFC;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.fila-encabezado {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.fila-nombre {
+    flex: 1 1 160px;
+    font-size: 1.05rem;
+}
+
+/* Cantidad con botones - y + */
+.contador {
+    display: flex;
+    align-items: center;
+}
+
+.boton-contador {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    font-size: 1.2rem;
+    background: var(--bg-white);
+    color: var(--primary);
+    border: 1px solid var(--border);
+}
+
+.boton-contador:hover {
+    background: #EEF3FB;
+}
+
+form .contador input.cantidad {
+    width: 56px;
+    height: 38px;
+    padding: 0 4px;
+    margin: 0 6px;
+    text-align: center;
+}
+
+.boton-quitar {
+    background: none;
+    color: var(--danger);
+    padding: 8px 10px;
+}
+
+.boton-quitar:hover {
+    background: #FDECEE;
+}
+
+/* Grupo de opciones que se ven como botones (Simple/Doble/Triple,
+   Retira/Envio, Efectivo/Transferencia). Por dentro son radios comunes. */
+.selector-opciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+form .selector-opciones .opcion {
+    margin: 0;
+    font-weight: 600;
+}
+
+.opcion input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.opcion span {
+    display: inline-block;
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-white);
+    color: var(--text-dark);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.opcion span:hover {
+    border-color: var(--primary);
+}
+
+.opcion input:checked + span {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--text-white);
+}
+
+.opcion input:focus-visible + span,
+.chip input:focus-visible + span {
+    box-shadow: 0 0 0 3px rgba(0, 51, 153, 0.3);
+}
+
+.selector-grande {
+    margin-bottom: 16px;
+}
+
+.selector-grande .opcion {
+    flex: 1 1 200px;
+}
+
+.selector-grande .opcion span {
+    display: block;
+    padding: 14px;
+    font-size: 1rem;
+    text-align: center;
+}
+
+#linkMaps {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 0.9rem;
+}
+
+/* Adicionales como etiquetas que se prenden al tocarlas. */
+.chips-adicionales {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.chips-adicionales:empty {
+    display: none;
+}
+
+form .chips-adicionales .chip {
+    margin: 0;
+    font-weight: 400;
+}
+
+.chip input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.chip span {
+    display: inline-block;
+    padding: 6px 12px;
+    border: 1px dashed var(--border);
+    border-radius: 999px;
+    background: var(--bg-white);
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.chip input:checked + span {
+    background: #EEF3FB;
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* Stock en negativo en el inventario: se uso mas de lo que habia cargado. */
+.stock-negativo {
+    color: var(--danger);
+    font-weight: 600;
+}
+
+/* ---------- Pegar mensaje de WhatsApp ---------- */
+.card-pegar textarea {
+    resize: vertical;
+    font-family: inherit;
+}
+
+.acciones-pegar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.acciones-pegar small {
+    color: var(--text-light);
+}
+
+.resultado-mensaje {
+    margin-top: 14px;
+    padding: 12px 16px;
+    border: 1px solid #B7DFC4;
+    border-radius: 6px;
+    background: #EEF8F1;
+    color: #1E5631;
+    font-size: 0.92rem;
+    line-height: 1.6;
+}
+
+.resultado-mensaje ul {
+    margin: 4px 0 0 20px;
+}
+
+.resultado-advertencia {
+    border-color: #F3D48A;
+    background: #FFF8E6;
+    color: #6B4E00;
+}
+
+/* ---------- Comanda para cocina ---------- */
+.card-comanda {
+    border-left: 5px solid var(--success);
+}
+
+.texto-comanda {
+    background: #F8FAFC;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    margin-bottom: 14px;
+}
+
+.acciones-comanda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.btn-whatsapp {
+    background-color: #1FA855;
+    color: var(--text-white);
+}
+
+.btn-whatsapp:hover {
+    background-color: #178A45;
+    color: var(--text-white);
+}
+
+.item-nota {
+    color: var(--text-light);
+    font-style: italic;
+}
+
+/* Cost summary */
+.cost-summary {
+    background: var(--primary-dark);
+    color: var(--text-white);
+    padding: 22px;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+.cost-summary p {
+    margin: 10px 0;
+    font-size: 1rem;
+}
+
+/* Radio buttons inline */
+input[type="radio"] {
+    margin-right: 8px;
+    accent-color: var(--primary);
+}
+
+input[type="radio"] + label {
+    display: inline;
+    margin-right: 25px;
+    font-weight: normal;
+}
+
+/* Checkbox */
+input[type="checkbox"] {
+    margin-right: 8px;
+    accent-color: var(--primary);
+}
+
+/* Action links in tables */
+td a {
+    margin-right: 12px;
+}
+
+td button {
+    margin-right: 8px;
+}
+
+/* Section dividers */
+hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 20px 0;
+}
+
+/* Back link */
+.back-link {
+    display: inline-block;
+    margin-bottom: 20px;
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+.back-link:hover {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+/* Form actions */
+.form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+}
+
+/* Total highlight */
+.total-highlight {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-white);
+    padding: 15px;
+    background: var(--accent);
+    border-radius: 6px;
+    text-align: center;
+    margin-top: 15px;
+}

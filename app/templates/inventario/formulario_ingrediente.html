@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Ingrediente - Entre Brasas{% endblock %}
+{% block encabezado %}
+    {% if modo == 'crear' %}Nuevo ingrediente{% else %}Editar ingrediente{% endif %}
+{% endblock %}
+
+{% block contenido %}
+<a href="{% url 'inventario:listar_ingredientes' %}" class="back-link">&laquo; Volver a la lista</a>
+
+{% if form.errors %}
+<div class="alerta alerta-error">Revisa los datos marcados abajo.</div>
+{% endif %}
+
+<form method="POST">
+    {% csrf_token %}
+
+    <div class="card">
+        {{ form.as_p }}
+    </div>
+
+    <div class="form-actions">
+        <a href="{% url 'inventario:listar_ingredientes' %}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+    </div>
+</form>
+{% endblock %}

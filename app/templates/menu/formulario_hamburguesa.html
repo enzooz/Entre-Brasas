@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Hamburguesa - Entre Brasas{% endblock %}
+{% block encabezado %}
+    {% if modo == 'crear' %}Nueva hamburguesa{% else %}Editar hamburguesa{% endif %}
+{% endblock %}
+
+{% block contenido %}
+<a href="{% url 'menu:listar_hamburguesas' %}" class="back-link">&laquo; Volver a la lista</a>
+
+{% if form.errors %}
+<div class="alerta alerta-error">Revisa los datos marcados abajo.</div>
+{% endif %}
+
+<form method="POST">
+    {# csrf_token es una proteccion de Django: pone un codigo escondido en #}
+    {# el formulario para confirmar que el envio salio de esta misma pagina. #}
+    {% csrf_token %}
+
+    <div class="card">
+        {# form.as_p dibuja todos los campos, cada uno dentro de un parrafo #}
+        {{ form.as_p }}
+    </div>
+
+    <div class="form-actions">
+        <a href="{% url 'menu:listar_hamburguesas' %}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+    </div>
+</form>
+{% endblock %}

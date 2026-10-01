@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Recetas - Entre Brasas{% endblock %}
+{% block encabezado %}Recetas{% endblock %}
+
+{% block contenido %}
+
+<div class="card">
+    <h2>Elegir producto</h2>
+
+    {# Este formulario va por GET: al enviarlo, el producto elegido queda #}
+    {# en la direccion (?tipo=hamburguesa&producto=3) y la vista lo lee. #}
+    <form method="GET" class="filter-bar">
+        <select name="tipo" class="form-control" aria-label="Tipo de producto">
+            <option value="hamburguesa" {% if tipo == 'hamburguesa' %}selected{% endif %}>Hamburguesa</option>
+            <option value="adicional" {% if tipo == 'adicional' %}selected{% endif %}>Adicional</option>
+        </select>
+
+        <select name="producto" class="form-control" aria-label="Producto de la receta">
+            <option value="">Elegir producto...</option>
+
+            <optgroup label="Hamburguesas">
+                {% for hamburguesa in hamburguesas %}
+                <option value="{{ hamburguesa.pk }}"
+                    {% if tipo == 'hamburguesa' and producto_id == hamburguesa.pk|stringformat:"s" %}selected{% endif %}>
+                    {{ hamburguesa.nombre }}
+                </option>
+                {% endfor %}
+            </optgroup>
+
+            <optgroup label="Adicionales">
+                {% for adicional in adicionales %}
+                <option value="{{ adicional.pk }}"
+                    {% if tipo == 'adicional' and producto_id == adicional.pk|stringformat:"s" %}selected{% endif %}>
+                    {{ adicional.nombre }}
+                </option>
+                {% endfor %}
+            </optgroup>
+        </select>
+
+        <button type="submit" class="btn btn-primary">Ver receta</button>
+    </form>
+
+    <p><small>Elegi primero si es hamburguesa o adicional, y despues el producto de esa lista.</small></p>
+</div>
+
+{% if producto %}
+<div class="card">
+    <h2>Receta de {{ producto.nombre }}</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Ingrediente</th>
+                <th>Cantidad por unidad</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for linea in lineas_receta %}
+            <tr>
+                <td>{{ linea.ingrediente.nombre }}</td>
+                <td>{{ linea.cantidad_requerida }} {{ linea.ingrediente.unidad }}</td>
+                <td>
+                    <form method="POST" action="{% url 'inventario:borrar_de_receta' linea.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Quitar</button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3">Este producto todavia no tiene receta cargada.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>Agregar ingrediente</h2>
+
+    <form method="POST" action="{% url 'inventario:agregar_a_receta' %}">
+        {% csrf_token %}
+
+        {# Campos escondidos: le avisan a la vista a que producto agregarle #}
+        {# el ingrediente, porque el formulario solo pide ingrediente y cantidad. #}
+        <input type="hidden" name="tipo" value="{{ tipo }}">
+        <input type="hidden" name="producto_id" value="{{ producto_id }}">
+
+        {{ form.as_p }}
+
+        <button type="submit" class="btn btn-primary">Agregar a la receta</button>
+    </form>
+</div>
+{% else %}
+<div class="empty-state">
+    <h2>Elegi un producto</h2>
+    <p>Arriba podes elegir la hamburguesa o el adicional cuya receta queres ver.</p>
+</div>
+{% endif %}
+
+{% endblock %}

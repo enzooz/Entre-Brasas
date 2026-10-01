@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Movimiento de stock - Entre Brasas{% endblock %}
+{% block encabezado %}Registrar movimiento de stock{% endblock %}
+
+{% block contenido %}
+<a href="{% url 'inventario:ver_inventario' %}" class="back-link">&laquo; Volver al inventario</a>
+
+<p class="page-description">El descuento por los pedidos se hace automáticamente. Para los demás cambios, elegí qué pasó:</p>
+<div class="movement-choices" aria-label="Elegir tipo de movimiento">
+    <button type="button" class="movement-choice" data-tipo="entrada" aria-pressed="false">{% include 'components/icon.html' with nombre='plus' %}<strong>Llegó una compra</strong><span>Entrada: sumá lo que recibiste.</span></button>
+    <button type="button" class="movement-choice" data-tipo="salida" aria-pressed="false">{% include 'components/icon.html' with nombre='box' %}<strong>Se usó o se perdió algo</strong><span>Salida: descontá esa cantidad.</span></button>
+    <button type="button" class="movement-choice" data-tipo="conteo" aria-pressed="false">{% include 'components/icon.html' with nombre='check' %}<strong>Conté lo que hay</strong><span>Conteo: escribí la cantidad real.</span></button>
+</div>
+
+{% if form.errors %}
+<div class="alerta alerta-error">Revisa los datos marcados abajo.</div>
+{% endif %}
+
+<form method="POST">
+    {% csrf_token %}
+
+    <div class="card">
+        {{ form.as_p }}
+    </div>
+
+    <div class="form-actions">
+        <a href="{% url 'inventario:ver_inventario' %}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Guardar movimiento</button>
+    </div>
+</form>
+
+<script>
+// La unidad y el stock de cada ingrediente, cargados desde Django:
+// { id: {unidad: "kg", stock: "2.50"}, ... }
+var INGREDIENTES = {
+    {% for ingrediente in ingredientes %}
+    "{{ ingrediente.pk }}": { unidad: "{{ ingrediente.unidad }}", stock: "{{ ingrediente.stock_actual }}" },
+    {% endfor %}
+};
+
+var selectorIngrediente = document.getElementById('id_ingrediente');
+var selectorTipo = document.getElementById('id_tipo');
+var etiquetaCantidad = document.querySelector('label[for="id_cantidad"]');
+var etiquetaPrecio = document.querySelector('label[for="id_precio_unitario"]');
+var etiquetaMotivo = document.querySelector('label[for="id_motivo"]');
+var filaPrecio = document.getElementById('id_precio_unitario').closest('p');
+
+// Cuando se elige un ingrediente o un tipo, las etiquetas pasan a decir en
+// que unidad va la cantidad. En un conteo, ademas, se muestra cuanto dice
+// el sistema que hay y se esconde el precio (no es una compra).
+function mostrarUnidad() {
+    var ingrediente = INGREDIENTES[selectorIngrediente.value];
+    var esConteo = selectorTipo.value === 'conteo';
+
+    document.querySelectorAll('.movement-choice').forEach(function (boton) {
+        var seleccionado = boton.dataset.tipo === selectorTipo.value;
+        boton.classList.toggle('is-selected', seleccionado);
+        boton.setAttribute('aria-pressed', String(seleccionado));
+    });
+
+    filaPrecio.hidden = esConteo;
+    etiquetaMotivo.textContent = esConteo ? 'Motivo (opcional):' : 'Motivo:';
+
+    if (!ingrediente) {
+        etiquetaCantidad.textContent = esConteo ? 'Cantidad contada:' : 'Cantidad:';
+        etiquetaPrecio.textContent = 'Precio unitario:';
+        return;
+    }
+
+    var unidad = ingrediente.unidad;
+    // "Cantidad (en unidades)" esta bien, pero el precio es "por unidad".
+    var unidadPrecio = unidad === 'unidades' ? 'unidad' : unidad;
+
+    if (esConteo) {
+        etiquetaCantidad.textContent = 'Cantidad contada (en ' + unidad + '). El sistema dice que hay ' + ingrediente.stock + ':';
+    } else {
+        etiquetaCantidad.textContent = 'Cantidad (en ' + unidad + '):';
+    }
+    etiquetaPrecio.textContent = 'Precio unitario ($ por ' + unidadPrecio + '):';
+}
+
+selectorIngrediente.addEventListener('change', mostrarUnidad);
+selectorTipo.addEventListener('change', mostrarUnidad);
+document.querySelectorAll('.movement-choice').forEach(function (boton) {
+    boton.addEventListener('click', function () {
+        selectorTipo.value = boton.dataset.tipo;
+        mostrarUnidad();
+        selectorIngrediente.focus();
+    });
+});
+
+// Tambien al cargar la pagina, por si vuelve con un ingrediente ya elegido
+// (cuando el formulario tenia errores).
+mostrarUnidad();
+</script>
+{% endblock %}

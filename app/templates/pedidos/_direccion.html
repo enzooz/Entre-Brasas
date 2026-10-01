@@ -1,0 +1,8 @@
+{# La direccion del envio. Si es un link (por ejemplo de Google Maps), #}
+{# se muestra como enlace para abrirlo con un clic.                    #}
+{# Lo usan el detalle y la cola con include.                           #}
+{% if pedido.cliente_direccion|slice:":4" == "http" %}
+<p>Direccion: <a href="{{ pedido.cliente_direccion }}" target="_blank" rel="noopener">Ver en Maps</a></p>
+{% else %}
+<p>Direccion: {{ pedido.cliente_direccion }}</p>
+{% endif %}
