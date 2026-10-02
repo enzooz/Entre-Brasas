@@ -11,6 +11,7 @@
     <script src="{% static 'js/interfaz.js' %}" defer></script>
     <script src="{% static 'js/estado-sistema.js' %}" defer></script>
     <script src="{% static 'js/borrador-pedido.js' %}" defer></script>
+    {% block extra_head %}{% endblock %}
 </head>
 <body data-page="{{ page_key }}" data-system-instance="{{ estado_sistema.instancia }}" data-system-status-url="{% url 'estado_sistema' %}"{% if estado_sistema.apagando %} class="system-off" data-system-off="true"{% endif %}>
     <a href="#contenido" class="skip-link">Ir al contenido</a>

@@ -36,7 +36,7 @@ Al implementar, conservar el historial de pedidos y sus precios guardados. Evita
 - La configuración debe expresar la tarifa por 100 metros, no por kilómetro entero.
 - La distancia se sigue ingresando en kilómetros: `0,1` equivale a 100 metros.
 - Los nuevos pedidos y la distancia mínima de configuración aceptan hasta un decimal (pasos de 100 metros). Se rechazan valores como `5,45` sin redondearlos silenciosamente. Las distancias de pedidos históricos se conservan.
-- Cobrar la distancia ingresada sin redondearla a kilómetros enteros: `5,4 km` corresponde a 54 tramos de 100 metros.
+- Cobrar sin redondear a kilómetros enteros. El envío mínimo cubre la distancia incluida; solo los metros excedentes generan tarifa adicional (ajuste del 01/10/2026).
 - Mantener coherentes el cálculo del navegador, el cálculo del servidor y las unidades que muestra la configuración.
 - No confundir el redondeo monetario con el redondeo de la distancia.
 
@@ -55,7 +55,7 @@ Implementado el 30/09/2026:
 - Base local actualizada con las 8 hamburguesas y los 5 adicionales de la captura. Productos anteriores desactivados, no eliminados.
 - `seed_data --reemplazar-menu` permite repetir la actualización sin duplicar productos ni borrar pedidos, movimientos, stock o configuración. Las cantidades de recetas ya existentes se conservan; las recetas nuevas usan las estimaciones documentadas en el comando original y deben confirmarse con el local.
 - Migración `config.0003_tarifa_por_100_metros`: convierte la tarifa anterior dividiéndola por 10 para mantener el precio equivalente. La base local pasó de $500/km a $50/100 m.
-- El navegador y el servidor calculan la distancia decimal exacta. Cuando se alcanza la distancia mínima para cobrar, el envío es **importe base + tarifa por toda la distancia**, no el mayor de ambos. Ejemplo: mínimo $1.000 + 54 × $50 para 5,4 km = $3.700. Se conserva el retiro gratis y la distancia gratis; no se recalculan pedidos históricos.
+- El navegador y el servidor calculan la distancia decimal exacta. Ajuste del 01/10/2026: **mínimo + tarifa solamente sobre la distancia excedente**. Ejemplo: mínimo $1.000 hasta 1 km y $100/100 m → hasta 1 km = $1.000; 1,1 km = $1.100; 1,3 km = $1.300. Retiro gratis, sin zona de envío gratis implícita ni recálculo de pedidos históricos.
 - Cada toque en el menú y las cantidades importadas desde WhatsApp generan unidades separadas. Los pedidos nuevos se guardan con un item por unidad; notas y adicionales son independientes.
 - Los medallones extra indican su cantidad y precio, evitando llamar “simple” a productos que ya traen varios medallones. La comanda explicita los medallones añadidos.
 - 23 pruebas automáticas aprobadas, incluyendo conversión de tarifa, historial conservado, extras individuales, descuento de stock y WhatsApp.
@@ -63,6 +63,16 @@ Implementado el 30/09/2026:
 - Verificación directa contra el respaldo: todos los registros anteriores de pedidos, items, adicionales de pedidos, historial de estados, movimientos e ingredientes quedaron intactos.
 
 ### Ajuste posterior solicitado
+
+### Carga en cuatro pasos — 01/10/2026
+
+- Cliente primero, Hamburguesas segundo, Pago y observaciones tercero, Ubicación/retiro y confirmación cuarto. No se crean cuentas de acceso.
+- Un solo panel visible, total y acciones fuera de su área desplazable. En ventanas bajas o con zoom alto se permite desplazamiento de página para no ocultar campos.
+- Avanzar valida los pasos previos; Atrás no borra nada. Enter avanza, pero nunca crea un pedido por accidente. Crear pedido aparece solo al final.
+- El borrador conserva también el paso, con compatibilidad para borradores anteriores. Extras, medallones y notas siguen siendo independientes por unidad. Descartar vuelve a Cliente.
+- Sin JavaScript se mantiene el formulario completo como alternativa. No se modificaron stock, valores de configuración ni pedidos históricos.
+
+### Otros ajustes anteriores
 
 - Quitado el botón Agregar otra. Para sumar unidades se vuelve a tocar el producto en el menú.
 - Hamburguesas y Adicionales muestran solo activos. Los productos anteriores se conservan en la base exclusivamente para preservar historial y relaciones; no aparecen en estos listados.

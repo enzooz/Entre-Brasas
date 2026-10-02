@@ -4,25 +4,35 @@
 {% block titulo %}Nuevo pedido - Entre Brasas{% endblock %}
 {% block encabezado %}Nuevo pedido{% endblock %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
+<link rel="stylesheet" href="{% static 'css/mapas-pedido.css' %}">
+{% endblock %}
+
 {% block contenido %}
 {# Pensado para cargar rapido lo que llega por WhatsApp:                  #}
-{#   nombre -> tocar las hamburguesas -> retira o envio -> crear.          #}
+{#   cliente -> hamburguesas -> pago -> ubicacion y crear.                #}
 {# Si retira, alcanza con el nombre. Al crear, el sistema arma la comanda. #}
 <form method="POST" id="formPedido">
     {% csrf_token %}
     <input type="hidden" name="borrador_token" id="borradorToken">
+    <input type="hidden" id="pasoPedido" value="0">
     <div class="draft-notice" id="borradorAviso" hidden>
         <div><strong id="borradorEstado" role="status" aria-live="polite"></strong><p id="borradorAyuda">Podés ir a otra sección y volver en esta pestaña. Todavía no es un pedido creado.</p></div>
         <button type="button" class="btn btn-secondary" id="descartarBorrador">Descartar borrador</button>
     </div>
 
     <div class="order-steps" aria-label="Pasos para cargar el pedido">
-        <a href="#paso-cliente"><span>1</span>Cliente</a>
-        <a href="#paso-productos"><span>2</span>Hamburguesas</a>
-        <a href="#paso-entrega"><span>3</span>Entrega y pago</a>
-        <a href="#paso-resumen"><span>4</span>Confirmar</a>
+        <button type="button" data-step="0" aria-controls="paso-cliente"><span>1</span>Cliente</button>
+        <button type="button" data-step="1" aria-controls="paso-productos"><span>2</span>Hamburguesas</button>
+        <button type="button" data-step="2" aria-controls="paso-pago"><span>3</span>Pago</button>
+        <button type="button" data-step="3" aria-controls="paso-entrega"><span>4</span>Ubicación</button>
     </div>
 
+    <div class="order-layout">
+    <div class="order-fields">
+    <section class="card wizard-panel" id="paso-cliente" aria-labelledby="tituloCliente">
+        <h2 id="tituloCliente" tabindex="-1">1. ¿Para quién es?</h2>
     {# Atajo para lo que llega por WhatsApp: se pega el mensaje del cliente y #}
     {# el formulario se completa solo (ver pedidos/interpretar.py). No guarda  #}
     {# nada: despues se revisa y se toca "Crear pedido" como siempre.          #}
@@ -42,10 +52,6 @@
         <div id="resultadoMensaje" class="resultado-mensaje" hidden></div>
     </details>
 
-    <div class="order-layout">
-    <div class="order-fields">
-    <div class="card" id="paso-cliente">
-        <h2>1. ¿Para quién es?</h2>
         <div class="customer-search">
             <label for="buscarCliente">Buscar cliente guardado (opcional)</label>
             <small id="ayudaBuscarCliente">Escribí al menos 2 caracteres del nombre o teléfono y elegí un resultado.</small>
@@ -61,6 +67,7 @@
             <small>Cliente nuevo limpia nombre, teléfono y dirección; no modifica las hamburguesas.</small>
         </div>
         <input type="hidden" name="cliente_id" id="clienteGuardadoId">
+        <div class="client-fields">
         <p>
             <label for="clienteNombre">Nombre del cliente *</label>
             <input type="text" name="cliente_nombre" id="clienteNombre" class="form-control"
@@ -72,15 +79,11 @@
                    maxlength="50" autocomplete="off" aria-describedby="ayudaTelefono">
             <small id="ayudaTelefono">Los datos se guardan al crear el pedido. El teléfono permite reconocer al cliente la próxima vez.</small>
         </p>
-        <p>
-            <label for="observaciones">Observaciones del pedido</label>
-            <input type="text" name="observaciones" id="observaciones" class="form-control"
-                   placeholder="Algo que valga para todo el pedido" autocomplete="off">
-        </p>
-    </div>
+        </div>
+    </section>
 
-    <div class="card" id="paso-productos">
-        <h2>2. Elegí las hamburguesas</h2>
+    <section class="card wizard-panel" id="paso-productos" aria-labelledby="tituloProductos">
+        <h2 id="tituloProductos" tabindex="-1">2. Elegí las hamburguesas</h2>
         <p class="page-description">Cada toque agrega una hamburguesa. Personalizá los extras y la nota de cada unidad por separado.</p>
 
         {# Un boton por hamburguesa. Cada clic agrega una fila abajo. #}
@@ -102,10 +105,24 @@
 
         <div id="listaProductos"></div>
         <p id="sinProductos" class="sin-productos" tabindex="-1" aria-live="polite">Tocá una hamburguesa para agregarla al pedido.</p>
-    </div>
+    </section>
 
-    <div class="card" id="paso-entrega">
-        <h2>3. ¿Cómo lo recibe? *</h2>
+    <section class="card wizard-panel" id="paso-pago" aria-labelledby="tituloPago">
+        <h2 id="tituloPago" tabindex="-1">3. Pago y observaciones</h2>
+        <div class="selector-opciones">
+            <label class="opcion"><input type="radio" name="metodo_pago" value="efectivo" checked><span>Efectivo</span></label>
+            <label class="opcion"><input type="radio" name="metodo_pago" value="transferencia"><span>Transferencia o QR</span></label>
+        </div>
+        <p>
+            <label for="observaciones">Observaciones del pedido (opcional)</label>
+            <input type="text" name="observaciones" id="observaciones" class="form-control"
+                   placeholder="Algo que valga para todo el pedido" autocomplete="off">
+        </p>
+        <p class="page-description">Las notas de cada hamburguesa se cargan en el paso anterior. Acá podés dejar una indicación para todo el pedido.</p>
+    </section>
+
+    <section class="card wizard-panel" id="paso-entrega" aria-labelledby="tituloEntrega">
+        <h2 id="tituloEntrega" tabindex="-1">4. Ubicación y entrega</h2>
         <div class="selector-opciones selector-grande">
             <label class="opcion">
                 <input type="radio" name="retiro_local" value="true" required onchange="cambiarEntrega()">
@@ -119,40 +136,54 @@
 
         {# Solo se muestra si es envio. #}
         <div id="datosEnvio" hidden>
+            <input type="hidden" id="ubicacionPedido">
             <p>
-                <label for="clienteDireccion">Direccion o link de Google Maps *</label>
+                <label for="clienteDireccion">Dirección de entrega *</label>
+                <span class="map-search-controls">
                 <input type="text" name="cliente_direccion" id="clienteDireccion" class="form-control"
-                       maxlength="300" autocomplete="off" oninput="mostrarLinkMaps()">
+                       maxlength="300" autocomplete="off" oninput="mostrarLinkMaps()" aria-describedby="ayudaMapa">
+                <button type="button" class="btn btn-secondary" id="buscarDireccion" data-url="{% url 'pedidos:buscar_direccion' %}"{% if not datos_formulario.mapas.habilitado %} disabled{% endif %}>Buscar dirección</button>
+                </span>
+                <small id="ayudaMapa">Calle y altura o lugar de Resistencia. Escribir no consume créditos; Buscar dirección sí consulta.</small>
                 <a id="linkMaps" href="#" target="_blank" rel="noopener" hidden>Abrir en Google Maps para ver la distancia</a>
             </p>
+            {% if not datos_formulario.mapas.habilitado %}
+            <p class="map-setup">Para abrir el mapa, buscar y calcular recorridos, <a href="{% url 'config:panel_config' %}">cargá tu clave gratuita de Geoapify en Configuración</a>. Mientras tanto, ingresá kilómetros manualmente.</p>
+            {% endif %}
+            <p id="estadoMapa" class="map-status" role="status" aria-live="polite"></p>
+            <div id="resultadosDirecciones" class="map-results" role="group" aria-label="Direcciones encontradas" hidden></div>
+            <div class="map-delivery-layout">
+            <div>
             <p>
                 <label for="distancia">Distancia (km) *</label>
                 <input type="number" name="distancia_km" id="distancia" class="form-control"
                        min="0" max="999.9" step="0.1" oninput="calcularTotal()" aria-describedby="ayudaDistancia">
-                <small id="ayudaDistancia">Usá como máximo un decimal: 0,1 = 100 metros; 5,4 = 5 km y 400 metros. No se redondean a kilómetros enteros.</small>
+                <small id="ayudaDistancia">Usá como máximo un decimal: 0,1 km = 100 metros.</small>
+                <small id="reglaEnvio"></small>
             </p>
+            <p id="detalleRecorrido" class="map-route-detail" hidden></p>
+            <details class="map-unit-help"><summary>Unidades y cálculo</summary><p>5,4 km son 5 km y 400 metros. La distancia calculada se trunca a un decimal: 1.340 metros → 1,3 km, sin redondear hacia 1,4 km. Podés corregir los kilómetros por teclado.</p></details>
+            </div>
+            <div class="map-preview">
+                <button type="button" class="btn btn-secondary" id="mostrarMapa" aria-expanded="false" aria-controls="panelMapa"{% if not datos_formulario.mapas.habilitado %} disabled{% endif %}>Mostrar mapa</button>
+                <div id="panelMapa" hidden>
+                    <div id="mapaPedido" aria-label="Mapa de Resistencia y recorrido de entrega"></div>
+                    <p class="map-caption">Salida: local configurado (inicialmente Jujuy 87). Tocá el mapa o arrastrá el destino para ajustar.</p>
+                    <p class="map-caption" id="estadoMosaicos" role="status"></p>
+                </div>
+            </div>
+            </div>
+            <small>Direcciones y recorridos: <a href="https://www.geoapify.com/" target="_blank" rel="noopener">Geoapify</a>. Distancia por calles (auto), no en línea recta.</small>
         </div>
-    </div>
-
-    <div class="card">
-        <h2>¿Cómo paga?</h2>
-        <div class="selector-opciones">
-            <label class="opcion">
-                <input type="radio" name="metodo_pago" value="efectivo" checked>
-                <span>Efectivo</span>
-            </label>
-            <label class="opcion">
-                <input type="radio" name="metodo_pago" value="transferencia">
-                <span>Transferencia o QR</span>
-            </label>
-        </div>
-    </div>
+        <p class="page-description">Revisá cliente, hamburguesas y total antes de crear el pedido.</p>
+    </section>
 
     </div>
     <aside class="order-summary" id="paso-resumen" aria-label="Resumen del pedido">
         <h2>Tu pedido</h2>
         <p id="resumenCliente" class="summary-client">Todavía no elegiste un cliente.</p>
         <p id="resumenCantidad" class="page-description">Agregá una hamburguesa para empezar.</p>
+        <ul id="resumenUnidades" class="summary-units" aria-label="Hamburguesas y personalizaciones"></ul>
         <div class="cost-summary">
             <p>Hamburguesas: $<span id="totalHamburguesas">0</span></p>
             <p>Adicionales: $<span id="totalAdicionales">0</span></p>
@@ -164,7 +195,12 @@
 
     <div class="form-actions">
         <a href="{% url 'pedidos:cola_pedidos' %}" class="btn btn-secondary">Volver a pedidos</a>
-        <button type="submit" class="btn btn-primary">Crear pedido</button>
+        <button type="submit" class="btn btn-primary" id="crearPedido">Crear pedido</button>
+    </div>
+    <div class="wizard-actions" id="accionesPasos" hidden>
+        <button type="button" class="btn btn-secondary" id="pasoAnterior">Atrás</button>
+        <p id="estadoPaso" role="status" aria-live="polite"></p>
+        <button type="button" class="btn btn-primary" id="pasoSiguiente">Continuar</button>
     </div>
     </aside>
     </div>
@@ -351,12 +387,13 @@ function calcularTotal() {
     var costoEnvio = 0;
 
     if (elegido && elegido.value === 'false') {
-        var distancia = parseFloat(document.getElementById('distancia').value) || 0;
+        var textoDistancia = document.getElementById('distancia').value;
+        var distancia = Number(textoDistancia.replace(',', '.'));
 
-        if (distancia >= DATOS.distancia_minima && distancia <= 999.9 && distancia === Math.round(distancia * 10) / 10) {
+        if (textoDistancia.trim() && Number.isFinite(distancia) && distancia >= 0 && distancia <= 999.9 && distancia === Math.round(distancia * 10) / 10) {
             // Metros exactos, sin aproximar la distancia a un km entero.
             // Trabajamos con centavos para evitar errores de coma flotante.
-            var metros = Math.round(distancia * 1000);
+            var metros = Math.max(0, Math.round(distancia * 1000) - Math.round(Number(DATOS.distancia_minima) * 1000));
             var tarifaCentavos = Math.round(parseFloat(DATOS.tarifa_100m) * 100);
             costoEnvio = Number(DATOS.costo_minimo_envio) + metros * tarifaCentavos / 10000;
         }
@@ -525,8 +562,6 @@ function avisarQueSeCompleto(pedido) {
     // Llevamos el cursor a lo primero que falta completar.
     if (!campoNombre.value.trim()) {
         campoNombre.focus();
-    } else if (pedido.entrega === 'envio') {
-        document.getElementById('distancia').focus();
     }
 }
 
@@ -552,9 +587,7 @@ var formulario = document.getElementById('formPedido');
 
 // Que un Enter en un campo de texto no mande el pedido sin querer.
 formulario.addEventListener('keydown', function (evento) {
-    if (evento.key === 'Enter' && evento.target.tagName === 'INPUT') {
-        evento.preventDefault();
-    }
+    if (!formulario.classList.contains('order-wizard') && evento.key === 'Enter' && evento.target.tagName === 'INPUT') evento.preventDefault();
 });
 
 // Sin hamburguesas no hay pedido.
@@ -569,4 +602,7 @@ formulario.addEventListener('submit', function (evento) {
 });
 </script>
 <script src="{% static 'js/clientes-pedido.js' %}" defer></script>
+<script src="{% static 'js/pasos-pedido.js' %}" defer></script>
+<script src="{% static 'vendor/leaflet/leaflet.js' %}" defer></script>
+<script src="{% static 'js/mapas-pedido.js' %}" defer data-route-url="{% url 'pedidos:calcular_recorrido' %}"></script>
 {% endblock %}

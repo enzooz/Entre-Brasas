@@ -25,24 +25,41 @@ class EnvioTests(TestCase):
     def test_retiro_no_cobra(self):
         self.assertEqual(calcular_envio('5.4', True), 0)
 
-    def test_distancia_gratis_y_minimo_sumado_a_la_tarifa(self):
+    def test_minimo_cubre_el_tramo_incluido(self):
         self.config.distancia_minima = Decimal('0.1')
         self.config.costo_minimo_envio = 1000
         self.config.save()
-        self.assertEqual(calcular_envio('0.09', False), 0)
-        self.assertEqual(calcular_envio('0.1', False), 1100)
-        self.assertEqual(calcular_envio('5.4', False), 6400)
+        self.assertEqual(calcular_envio('0.09', False), 1000)
+        self.assertEqual(calcular_envio('0.1', False), 1000)
+        self.assertEqual(calcular_envio('5.4', False), 6300)
         self.assertEqual(calcular_envio('5.4', True), 0)
 
-    def test_minimo_mas_distancia_total_no_solo_excedente(self):
+    def test_minimo_mas_solo_la_distancia_excedente(self):
         self.config.distancia_minima = Decimal('1')
         self.config.costo_minimo_envio = 1000
         self.config.tarifa_100m = Decimal('50')
         self.config.save()
-        self.assertEqual(calcular_envio('0.99', False), 0)
-        self.assertEqual(calcular_envio('1', False), 1500)
-        self.assertEqual(calcular_envio('5,4', False), 3700)
-        self.assertEqual(calcular_envio('5.45', False), 3725)
+        self.assertEqual(calcular_envio('0.99', False), 1000)
+        self.assertEqual(calcular_envio('1', False), 1000)
+        self.assertEqual(calcular_envio('5,4', False), 3200)
+        self.assertEqual(calcular_envio('5.45', False), 3225)
+
+    def test_ejemplo_del_local_y_limites_del_tramo(self):
+        self.config.distancia_minima = Decimal('1')
+        self.config.costo_minimo_envio = 1000
+        self.config.save()
+        for distancia, costo in [('0', 1000), ('0.1', 1000), ('0.9', 1000),
+                                 ('1', 1000), ('1.1', 1100), ('1,3', 1300), ('5.4', 5400)]:
+            with self.subTest(distancia=distancia):
+                self.assertEqual(calcular_envio(distancia, False), costo)
+
+    def test_valores_arbitrarios_no_asumen_un_kilometro_incluido(self):
+        self.config.distancia_minima = Decimal('2.3')
+        self.config.costo_minimo_envio = 700
+        self.config.tarifa_100m = 80
+        self.config.save()
+        self.assertEqual(calcular_envio('2.3', False), 700)
+        self.assertEqual(calcular_envio('2.7', False), 1020)
 
     def test_base_y_tarifa_decimal_se_redondean_una_sola_vez(self):
         self.config.costo_minimo_envio = 1000
@@ -58,7 +75,7 @@ class EnvioTests(TestCase):
     def test_datos_formulario_usan_tarifa_nueva(self):
         response = self.client.get(reverse('pedidos:crear_pedido'))
         self.assertEqual(Decimal(response.context['datos_formulario']['tarifa_100m']), Decimal('100'))
-        self.assertContains(response, '5,4 = 5 km y 400 metros')
+        self.assertContains(response, '5,4 km son 5 km y 400 metros')
 
 
 class UnidadesPedidoTests(TestCase):
@@ -153,9 +170,21 @@ class UnidadesPedidoTests(TestCase):
         Configuracion.objects.create(pk=1, tarifa_100m=50, distancia_minima=1, costo_minimo_envio=1000)
         self.crear(retiro_local='false', distancia_km='5,4', cliente_direccion='Jujuy 87', cliente_telefono='12345678')
         pedido = Pedido.objects.get()
+        self.assertEqual(pedido.costo_envio, 3200)
+        self.assertEqual(pedido.total, 32200)
+        self.assertIn('Total $32.200', armar_comanda(pedido))
+
+    def test_cambio_de_tarifa_no_recalcula_pedidos_historicos(self):
+        config = Configuracion.objects.create(pk=1, tarifa_100m=50, distancia_minima=1, costo_minimo_envio=1000)
+        self.crear(retiro_local='false', distancia_km='5.4', cliente_direccion='Prueba', cliente_telefono='12345678')
+        pedido = Pedido.objects.get()
+        Pedido.objects.filter(pk=pedido.pk).update(costo_envio=3700, total=32700)
+        config.tarifa_100m = 100
+        config.save()
+        self.assertEqual(calcular_envio('5.4', False), 5400)
+        pedido.refresh_from_db()
         self.assertEqual(pedido.costo_envio, 3700)
         self.assertEqual(pedido.total, 32700)
-        self.assertIn('Total $32.700', armar_comanda(pedido))
 
     def test_distancia_invalida_no_guarda_pedido(self):
         for distancia in ['', 'NaN', 'Infinity', '-1', '1000', '999.91', '5.45', '5,45', '5.456', 'abc']:

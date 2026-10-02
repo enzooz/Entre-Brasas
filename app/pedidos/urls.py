@@ -11,6 +11,7 @@ Si manana cambiamos la direccion, las pantallas siguen funcionando.
 from django.urls import path
 
 from . import views
+from . import mapas
 
 # Este nombre es el que va adelante del apodo: 'pedidos:cola_pedidos'.
 # Sirve para que no se mezclen dos apps que tengan una direccion con el mismo apodo.
@@ -19,6 +20,9 @@ app_name = 'pedidos'
 urlpatterns = [
     path('nuevo/', views.crear_pedido, name='crear_pedido'),
     path('clientes/buscar/', views.buscar_clientes, name='buscar_clientes'),
+    path('mapas/buscar/', mapas.buscar_direccion, name='buscar_direccion'),
+    path('mapas/recorrido/', mapas.calcular_recorrido, name='calcular_recorrido'),
+    path('mapas/mosaicos/<int:z>/<int:x>/<int:y>.png', mapas.mosaico_mapa, name='mosaico_mapa'),
     # Lo usa el boton "Completar desde el mensaje" de Nuevo pedido.
     path('nuevo/interpretar/', views.interpretar_mensaje_view, name='interpretar_mensaje'),
     path('cola/', views.cola_pedidos, name='cola_pedidos'),

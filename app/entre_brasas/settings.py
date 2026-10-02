@@ -135,6 +135,24 @@ WHITENOISE_USE_FINDERS = True
 # Tipo de numero que usa Django para el id automatico de cada tabla.
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Consultas repetidas no gastan créditos. Archivos locales, nunca publicados.
+CACHES = {
+    'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'},
+    'mapas': {
+        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+        'LOCATION': DATOS_DIR / 'cache_mapas',
+        'OPTIONS': {'MAX_ENTRIES': 2000},
+    },
+    'mapas_control': {
+        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+        'LOCATION': DATOS_DIR / 'cache_mapas' / 'control',
+        'OPTIONS': {'MAX_ENTRIES': 1000},
+    },
+}
+MAPAS_LIMITE_DIARIO = 2000  # Créditos preventivos de esta instalación; no saldo real del proveedor.
+MAPAS_TILE_URL = os.environ.get('ENTRE_BRASAS_MAPAS_TILE_URL', '/pedidos/mapas/mosaicos/{z}/{x}/{y}.png')
+MAPAS_TILE_ATTRIBUTION = os.environ.get('ENTRE_BRASAS_MAPAS_TILE_ATTRIBUTION', '© OpenStreetMap contributors · Geoapify')
+
 # En la compu del cliente los errores no se muestran en pantalla (DEBUG esta
 # apagado), asi que se anotan en un archivo para poder revisarlos despues:
 # C:/Users/<usuario>/AppData/Local/EntreBrasas/errores.log

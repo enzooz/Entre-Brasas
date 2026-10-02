@@ -14,6 +14,7 @@ F5 se vuelva a mandar el mismo pedido dos veces.
 Las cuentas no estan aca, estan en calculos.py.
 """
 from urllib.parse import quote
+from django.conf import settings
 from decimal import Decimal, InvalidOperation
 from uuid import UUID
 
@@ -116,6 +117,12 @@ def crear_pedido(request):
             'tarifa_100m': str(configuracion.tarifa_100m),
             'distancia_minima': float(configuracion.distancia_minima),
             'costo_minimo_envio': configuracion.costo_minimo_envio,
+            'mapas': {
+                'habilitado': bool(configuracion.geoapify_api_key),
+                'origen': [configuracion.local_latitud, configuracion.local_longitud],
+                'tile_url': settings.MAPAS_TILE_URL,
+                'tile_attribution': settings.MAPAS_TILE_ATTRIBUTION,
+            },
         },
     })
 

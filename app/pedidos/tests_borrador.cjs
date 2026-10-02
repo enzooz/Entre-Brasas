@@ -15,7 +15,8 @@ function setup({storage = new Map(), cookie = '', formPresent = true, failStorag
             addEventListener(type, fn) { this.listeners[type] = fn; }, focus() { this.focused = true; }};
     }
     const ids = Object.fromEntries(['clienteNombre', 'observaciones', 'clienteDireccion', 'clienteTelefono', 'distancia', 'mensajeWhatsapp',
-        'clienteGuardadoId', 'borradorAviso', 'borradorEstado', 'borradorAyuda', 'borradorToken', 'descartarBorrador', 'resultadoMensaje', 'listaProductos'].map(id => [id, node()]));
+        'pasoPedido', 'clienteGuardadoId', 'borradorAviso', 'borradorEstado', 'borradorAyuda', 'borradorToken', 'descartarBorrador', 'resultadoMensaje', 'listaProductos'].map(id => [id, node()]));
+    ids.pasoPedido.value = '0';
     const rows = [], details = node(), events = {}, windowEvents = {};
     const delivery = [node('true'), node('false')], payment = [node('efectivo'), node('transferencia')];
     payment[0].checked = true;
@@ -37,11 +38,11 @@ function setup({storage = new Map(), cookie = '', formPresent = true, failStorag
     const buttons = available ? [{dataset: {id: '1', nombre: 'Baconera', precio: String(prices)}}] : [];
     const document = {cookie, hidden: false, getElementById: id => id === 'formPedido' ? (formPresent ? form : null) : ids[id],
         querySelector: () => details, querySelectorAll: selector => selector === '.boton-menu' ? buttons : rows,
-        addEventListener(type, fn) { events[type] = fn; }};
+        addEventListener(type, fn) { events[type] = fn; }, dispatchEvent(event) { if (events[event.type]) events[event.type](event); }};
     const window = {crypto: {randomUUID: () => token}, confirm: () => true,
         sessionStorage: {getItem: k => storage.get(k) || null, setItem(k, v) { if (failStorage) throw new Error('No permite'); storage.set(k, v); }, removeItem: k => storage.delete(k)},
         addEventListener(type, fn) { windowEvents[type] = fn; }};
-    vm.runInNewContext(source, {window, document, crearFila: createRow, cambiarEntrega() {}, mostrarLinkMaps() {}, calcularTotal() {}});
+    vm.runInNewContext(source, {window, document, Event: class {constructor(type) {this.type = type;}}, crearFila: createRow, cambiarEntrega() {}, mostrarLinkMaps() {}, calcularTotal() {}});
     events.DOMContentLoaded();
     return {storage, ids, form, rows, createRow, delivery, payment, details, document, events, windowEvents};
 }
@@ -53,6 +54,7 @@ test('guarda y recupera campos, unidades independientes, extras, medallones y no
     ui.ids.clienteDireccion.value = 'Dirección de prueba';
     ui.ids.clienteTelefono.value = '123';
     ui.ids.distancia.value = '5.4';
+    ui.ids.pasoPedido.value = '3';
     ui.ids.observaciones.value = 'Tocar timbre';
     ui.ids.mensajeWhatsapp.value = 'Mensaje sin interpretar';
     ui.details.open = true;
@@ -72,6 +74,7 @@ test('guarda y recupera campos, unidades independientes, extras, medallones y no
     const next = setup({storage: ui.storage, prices: 14000});
     assert.equal(next.ids.clienteNombre.value, 'Prueba de borrador');
     assert.equal(next.ids.distancia.value, '5.4');
+    assert.equal(next.ids.pasoPedido.value, '3');
     assert.equal(next.rows[0].note.value, 'Sin cebolla');
     assert.equal(next.rows[1].note.value, 'Bien cocida');
     assert.equal(next.rows[0].extras[0].checked, true);
@@ -80,6 +83,13 @@ test('guarda y recupera campos, unidades independientes, extras, medallones y no
     assert.equal(next.rows[0].dataset.precio, '14000');
     assert.equal(next.payment[1].checked, true);
     assert.equal(next.ids.borradorEstado.textContent, 'Retomaste tu pedido a medio cargar');
+});
+
+test('el paso inicial por sí solo no crea un borrador vacío', () => {
+    const ui = setup();
+    ui.windowEvents.pagehide();
+    assert.equal(ui.storage.has(key), false);
+    assert.equal(ui.ids.borradorAviso.hidden, true);
 });
 
 test('salir o enviar guarda el borrador, sin asumir que el pedido se creó', () => {

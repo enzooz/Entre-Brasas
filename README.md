@@ -5,6 +5,9 @@ inventario, recetas, reportes de ventas y costos por producto.
 
 Hecho con Django y SQLite.
 
+Mapa integrado, clave Geoapify y tarifa editable por 100 metros:
+[guía de mapa y envíos](docs/mapa-y-envios.md).
+
 ---
 
 ## Guia para el equipo: como correr el proyecto en tu computadora
@@ -277,8 +280,21 @@ cargados; un `git pull` por sí solo no actualiza el menú de la base.
 
 La configuración del envío ahora expresa la tarifa por **100 metros**. La
 migración divide la tarifa anterior por 10 para conservar el precio equivalente.
-La distancia se ingresa en kilómetros exactos: 5,4 km cobra 54 veces la tarifa,
-más el envío mínimo (importe base), salvo retiro o distancia dentro del umbral gratis.
+La distancia se ingresa en kilómetros con hasta un decimal. El envío mínimo
+cubre la **distancia incluida** configurada; después se suma la tarifa solo por
+los metros excedentes: `mínimo + max(0, km - km incluidos) × 10 × tarifa por 100 m`.
+Ejemplo: $1000 hasta 1 km y $100 cada 100 m adicionales → 0,1–1 km cuesta
+$1000, 1,1 km cuesta $1100 y 1,3 km cuesta $1300. Retirar en el local cuesta $0.
+Se conserva la configuración existente y no se recalculan pedidos históricos.
+
+Nuevo pedido se carga en cuatro paneles: **Cliente → Hamburguesas → Pago →
+Ubicación**. Atrás conserva los datos; Continuar valida el paso. El total y los
+controles quedan fuera del panel desplazable para pedidos largos. Cliente crece
+con sus campos y avisos sin scroll interno; en ventanas bajas o celular se puede
+desplazar la página. Nombre y teléfono quedan alineados en escritorio y se apilan
+en celular para conservar su legibilidad.
+El borrador por pestaña guarda también el paso; solamente Crear pedido al final
+envía los datos. Buscar un cliente o pegar WhatsApp sigue siendo opcional.
 
 ---
 
@@ -332,7 +348,7 @@ git diff
 Si cambiaste JavaScript, necesitas Node.js para ejecutar tambien estas pruebas
 desde `app` (no se necesita para instalar o usar la aplicacion):
 ```powershell
-node --test entre_brasas/tests_estado_sistema.cjs pedidos/tests_borrador.cjs pedidos/tests_clientes.cjs pedidos/tests_envio.cjs
+node --test entre_brasas/tests_estado_sistema.cjs pedidos/tests_borrador.cjs pedidos/tests_clientes.cjs pedidos/tests_envio.cjs pedidos/tests_pasos.cjs pedidos/tests_mapas.cjs
 ```
 Proba tambien el flujo que modificaste en el navegador. Las pruebas de
 arranque del instalador solo se ejecutan en Windows.

@@ -40,7 +40,9 @@ def ejecutar_servidor(application, puerto, abrir_navegador=True):
     from waitress import create_server, wasyncore
     from entre_brasas import servidor_local
     conexiones = {}
-    servidor = create_server(application, host='127.0.0.1', port=puerto, map=conexiones)
+    # Mapas permite hasta ocho consultas en espera; quedan trabajadores libres
+    # para cargar pedidos, comprobar el estado y apagar aunque Internet esté lento.
+    servidor = create_server(application, host='127.0.0.1', port=puerto, map=conexiones, threads=16)
     detener = threading.Event()
     servidor_local.registrar(detener)
     direccion = f'http://127.0.0.1:{servidor.effective_port}'

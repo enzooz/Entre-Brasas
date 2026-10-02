@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-01T00:00:00-03:00",
+  "title": "Design System: Entre Brasas",
+  "extensions": {
+    "shadows": [{"name":"task-hover","value":"0 5px 18px rgb(36 85 214 / 7%)","purpose":"Accesos de tareas al pasar el puntero."}],
+    "motion": [{"name":"feedback","value":"160ms","purpose":"Hover y selección."},{"name":"drawer","value":"180ms ease-out","purpose":"Panel de navegación móvil."}],
+    "breakpoints": [{"name":"mobile","value":"760px"},{"name":"stacked","value":"1000px"},{"name":"compact","value":"1200px"}]
+  },
+  "components": [
+    {"name":"Pasos de nuevo pedido","kind":"custom","description":"Cliente, Hamburguesas, Pago y Ubicación. Un panel visible; Atrás conserva datos, Continuar valida. Total fuera del desplazamiento y creación únicamente al final.","html":"<nav class=\"ds-steps\" aria-label=\"Pasos para cargar el pedido\"><button aria-current=\"step\">1 Cliente</button><button>2 Hamburguesas</button><button>3 Pago</button><button>4 Ubicación</button></nav>","css":".ds-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;font:400 12px Manrope,sans-serif}.ds-steps button{padding:8px 10px;min-height:42px;background:transparent;color:var(--text-light,#647086);border:1px solid transparent;border-radius:8px;cursor:pointer}.ds-steps button[aria-current]{background:var(--primary-light,#eaf0ff);color:var(--primary-dark,#1942ad);border-color:var(--primary,#2455d6)}.ds-steps button:hover{color:var(--primary-dark,#1942ad)}.ds-steps button:focus-visible{outline:3px solid #537dea;outline-offset:4px}.ds-steps button:disabled{opacity:.55;cursor:not-allowed}"},
+    {"name":"Botón principal","kind":"button","refersTo":"button-primary","description":"Acción principal de la tarea.","html":"<button class=\"ds-primary\">Crear pedido</button>","css":".ds-primary{background:var(--primary,#2455d6);color:white;padding:10px 16px;min-height:42px;border:0;border-radius:8px;font:700 12px Manrope,sans-serif;cursor:pointer}.ds-primary:hover{background:var(--primary-dark,#1942ad)}.ds-primary:focus-visible{outline:3px solid #537dea;outline-offset:4px}.ds-primary:disabled{opacity:.55;cursor:not-allowed}"},
+    {"name":"Botón secundario","kind":"button","refersTo":"button-secondary","description":"Volver o consultar sin competir con la acción principal.","html":"<button class=\"ds-secondary\">Volver a pedidos</button>","css":".ds-secondary{background:white;color:#45526a;padding:10px 16px;min-height:42px;border:1px solid #ccd4e1;border-radius:8px;font:700 12px Manrope,sans-serif;cursor:pointer}.ds-secondary:hover{background:#f0f3f8}.ds-secondary:focus-visible{outline:3px solid #537dea;outline-offset:4px}"},
+    {"name":"Campo etiquetado","kind":"input","refersTo":"input","description":"Etiqueta persistente y foco visible.","html":"<label class=\"ds-field\">Nombre del cliente<input placeholder=\"Ej.: Agostina\"></label>","css":".ds-field{display:grid;gap:6px;color:#354158;font:700 12px Manrope,sans-serif}.ds-field input{background:white;color:#202c42;min-height:44px;border:1px solid #ccd4e1;border-radius:8px;padding:11px 13px;font:400 13px Manrope,sans-serif}.ds-field input:focus{outline:3px solid #e3eaff;border-color:#2455d6}"},
+    {"name":"Estado del pedido","kind":"chip","description":"Texto y color semánticos.","html":"<span class=\"ds-status\">En preparación</span>","css":".ds-status{display:inline-block;background:#e0f2f3;color:#08636f;padding:4px 9px;border-radius:6px;font:700 10px Manrope,sans-serif}"},
+    {"name":"Navegación activa","kind":"nav","description":"Ubicación actual del usuario.","html":"<a class=\"ds-nav\" href=\"#\" aria-current=\"page\">Pedidos en curso</a>","css":".ds-nav{display:block;background:#2c59cd;color:white;padding:10px 12px;border-radius:8px;text-decoration:none;font:700 12px Manrope,sans-serif}.ds-nav:hover{background:#1942ad}.ds-nav:focus-visible{outline:3px solid #537dea;outline-offset:4px}"},
+    {"name":"Panel","kind":"card","refersTo":"panel","description":"Contenedor de una tarea o sección.","html":"<section class=\"ds-panel\"><h2>Tu pedido</h2><p>Revisá los datos antes de confirmar.</p></section>","css":".ds-panel{background:white;color:#202c42;border:1px solid #e2e6ee;border-radius:12px;padding:24px;font:400 14px Manrope,sans-serif}.ds-panel h2{font-size:17px;font-weight:800;margin:0 0 14px}.ds-panel p{color:#647086;font-size:12px;margin:0}"}
+  ],
+  "narrative": {
+    "northStar": "Un puesto de trabajo para el local",
+    "overview": "La tarea principal se encuentra primero y cada pantalla explica cómo seguir. Se conserva el azul, con navegación marina, superficies claras y lenguaje cotidiano en español argentino.",
+    "keyCharacteristics": ["Accesos por tarea","Estados con texto y color","Guías de siguiente paso","Uso en escritorio y celular"],
+    "rules": [{"name":"Una acción, un significado","body":"Usar azul para la acción principal y rojo para cancelar. No comunicar un estado solo por color.","section":"colors"}],
+    "dos": ["Usar los componentes comunes antes de crear un estilo nuevo.","Explicar el siguiente paso con una frase corta.","Elegir cards para accesos y tablas para comparar filas."],
+    "donts": ["No mostrar cifras ficticias para llenar un panel; los ceros son información real.","No convertir cada párrafo en una card ni anidar contenedores decorativos.","No hacer depender el uso del sistema de tipografías o iconos externos."]
+  }
+}

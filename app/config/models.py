@@ -9,7 +9,7 @@ Hay una sola fila de configuracion en toda la base (la fila numero 1).
 No tendria sentido tener varias "configuraciones del sistema".
 """
 from django.db import models
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class Configuracion(models.Model):
@@ -22,10 +22,10 @@ class Configuracion(models.Model):
         validators=[MinValueValidator(0)], verbose_name='Tarifa por cada 100 metros ($)',
     )
 
-    # Hasta esta distancia no se cobra envio (es "a la vuelta").
+    # Distancia cubierta por el envio minimo; solo el excedente suma tarifa.
     distancia_minima = models.DecimalField(max_digits=5, decimal_places=2, default=1)
 
-    # Importe base: se suma a la tarifa por distancia cuando el envio no es gratis.
+    # Precio del tramo incluido, incluso para envios mas cortos.
     costo_minimo_envio = models.PositiveIntegerField(default=1000)
 
     # Se usa para calcular cuanto cuesta preparar cada hamburguesa.
@@ -35,6 +35,10 @@ class Configuracion(models.Model):
     # sin espacios (por ejemplo 5493624000000). Si esta cargado, el detalle
     # del pedido muestra un boton que abre WhatsApp con la comanda ya escrita.
     whatsapp_cocina = models.CharField(max_length=30, blank=True)
+
+    geoapify_api_key = models.CharField(max_length=128, blank=True)
+    local_latitud = models.FloatField(default=-27.455266, validators=[MinValueValidator(-90), MaxValueValidator(90)])
+    local_longitud = models.FloatField(default=-58.992536, validators=[MinValueValidator(-180), MaxValueValidator(180)])
 
     class Meta:
         verbose_name = "Configuracion"

@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/static/css/estilo.css"
+        ],
+        "createdAt": "2026-09-28T03:41:11.697Z",
+        "reason": "Usuario confirmo que el borde izquierdo de las tarjetas es intencional: es el estilo de tarjeta del sistema y en la cola indica el estado del pedido"
+      }
+    ]
+  }
+}

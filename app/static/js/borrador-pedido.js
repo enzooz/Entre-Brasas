@@ -24,6 +24,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var fieldIds = ['clienteNombre', 'observaciones', 'clienteDireccion', 'clienteTelefono', 'distancia', 'mensajeWhatsapp'];
     if (document.getElementById('clienteGuardadoId')) fieldIds.push('clienteGuardadoId');
+    if (document.getElementById('pasoPedido')) fieldIds.push('pasoPedido');
+    if (document.getElementById('ubicacionPedido')) fieldIds.push('ubicacionPedido');
     var notice = document.getElementById('borradorAviso');
     var state = document.getElementById('borradorEstado');
     var help = document.getElementById('borradorAyuda');
@@ -63,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function meaningful(data) {
         return data.items.length || data.entrega || data.pago !== 'efectivo'
-            || fieldIds.some(function (id) { return data.fields[id].trim(); });
+            || fieldIds.some(function (id) { return id !== 'pasoPedido' && data.fields[id].trim(); });
     }
 
     function save() {
@@ -140,6 +142,7 @@ document.addEventListener('DOMContentLoaded', function () {
         notice.hidden = true;
         notice.classList.remove('is-warning');
         help.textContent = 'Podés ir a otra sección y volver en esta pestaña. Todavía no es un pedido creado.';
+        document.dispatchEvent(new Event('pedido:borrador-descartado'));
     }
 
     if (draft && !storageProblem) restore(draft);

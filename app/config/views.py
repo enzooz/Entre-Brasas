@@ -3,11 +3,13 @@ Vista de la app Config: la pantalla donde se cambian las tarifas del sistema.
 """
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.views.decorators.debug import sensitive_post_parameters
 
 from .models import Configuracion
 from .forms import ConfiguracionForm
 
 
+@sensitive_post_parameters('geoapify_api_key')
 def panel_config(request):
     """
     Pantalla de configuracion.

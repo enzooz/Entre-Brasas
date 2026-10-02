@@ -24,3 +24,9 @@ Thumbs.db
 copias_de_seguridad/
 app/servidor.log
 app/arranque-*.lock
+cache_mapas/
+
+# Configuración de esta máquina y evidencia local de pruebas
+.claude/
+.impeccable/review/
+.impeccable/progreso-mapas.md

@@ -57,9 +57,11 @@ class MigracionTarifaTests(TransactionTestCase):
             anterior.get_model('config', 'Configuracion').objects.update_or_create(pk=1, defaults={'tarifa_km': 555})
             executor = MigrationExecutor(connection)
             executor.migrate([('config', '0003_tarifa_por_100_metros')])
-            self.assertEqual(Configuracion.objects.get(pk=1).tarifa_100m, Decimal('55.50'))
+            migrado = executor.loader.project_state([('config', '0003_tarifa_por_100_metros')]).apps
+            self.assertEqual(migrado.get_model('config', 'Configuracion').objects.get(pk=1).tarifa_100m, Decimal('55.50'))
         finally:
-            MigrationExecutor(connection).migrate([('config', '0003_tarifa_por_100_metros')])
+            executor = MigrationExecutor(connection)
+            executor.migrate(executor.loader.graph.leaf_nodes())
 
 
 class RespaldosTests(SimpleTestCase):

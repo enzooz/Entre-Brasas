@@ -6,7 +6,7 @@ from .servidor_local import disponible, estado
 PANTALLAS = {
     'inicio': ('Inicio', 'Todo lo que necesitás para trabajar en el local, en un solo lugar.'),
     'apagar_sistema': ('El sistema', 'Control del servidor local de Entre Brasas.'),
-    'crear_pedido': ('Pedidos', 'Elegí las hamburguesas, completá la entrega y dejá la comanda lista para cocina.'),
+    'crear_pedido': ('Pedidos', 'Cliente, hamburguesas, pago y ubicación: un paso a la vez, sin perder lo cargado.'),
     'cola_pedidos': ('Pedidos', 'Seguí cada pedido y avanzalo cuando la cocina o el reparto estén listos.'),
     'detalle_pedido': ('Pedidos', 'Compartí la comanda, revisá los datos y seguí el estado del pedido.'),
     'historial_pedidos': ('Pedidos', 'Consultá los pedidos entregados y cancelados. Buscá por cliente o fecha.'),

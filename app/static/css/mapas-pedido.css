@@ -1,0 +1,32 @@
+/* Extensión del paso Ubicación: hereda controles, colores y tipografía. */
+.map-search-controls { display: flex; align-items: stretch; gap: 8px; }
+.map-search-controls input { flex: 1; min-width: 0; }
+.map-search-controls .btn { flex-shrink: 0; }
+.map-status:empty, .map-caption:empty { display: none; }
+.map-status { margin: 8px 0; font-size: 12px; color: var(--text-dark); }
+.map-status.is-error, .map-caption.is-error { color: #b43242; }
+.map-setup { font-size: 12px; color: var(--text-dark); margin: 8px 0; }
+.map-results { display: grid; gap: 6px; margin: 10px 0 16px; }
+.map-results button { text-align: left; white-space: normal; min-height: 44px; }
+.map-results small { display: block; font-weight: 400; color: var(--text-light); }
+.map-delivery-layout { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(260px, 1.2fr); gap: 20px; margin: 12px 0; }
+.map-delivery-layout > div { min-width: 0; }
+.map-delivery-layout p:first-child { margin-top: 0; }
+.map-route-detail { color: #16724c; font-size: 12px; font-weight: 700; }
+.map-unit-help { margin-top: 10px; font-size: 12px; }
+.map-unit-help summary { cursor: pointer; color: var(--primary-dark); }
+.map-unit-help p { margin: 8px 0; color: var(--text-light); }
+#panelMapa { margin-top: 10px; }
+#mapaPedido { height: 220px; border: 1px solid var(--border); border-radius: 8px; background: #f5f6fa; }
+#mapaPedido .leaflet-control { z-index: 1; }
+#mapaPedido .leaflet-control-attribution { color: #202c42; background: #fff; font-size: 10px; }
+#mapaPedido .leaflet-control-attribution a { color: #1942ad; }
+#mapaPedido .leaflet-control-zoom a { min-width: 44px; height: 44px; line-height: 44px; }
+.map-destination-pin { background: #2455d6; border: 3px solid white; border-radius: 50%; box-shadow: 0 2px 6px #202c4266; }
+.map-caption { font-size: 11px; color: var(--text-light); margin: 8px 0; }
+@media (max-width: 1000px) { .map-delivery-layout { grid-template-columns: 1fr; gap: 12px; } }
+@media (max-width: 460px) {
+    .map-search-controls { flex-wrap: wrap; }
+    .map-search-controls input, .map-search-controls .btn { width: 100%; }
+    #mapaPedido { height: 230px; }
+}
