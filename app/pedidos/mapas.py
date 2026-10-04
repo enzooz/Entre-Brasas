@@ -24,8 +24,20 @@ from config.models import Configuracion
 
 _cerrojo = threading.Lock()
 _trabajos = threading.BoundedSemaphore(8)
-_ultima_consulta = 0.0
+# Momento a partir del cual sale la proxima consulta a Geoapify. Cada consulta
+# reserva su turno y corre el siguiente ESPACIO_ENTRE_CONSULTAS segundos.
+_proximo_turno = 0.0
+ESPACIO_ENTRE_CONSULTAS = 0.26  # Menos de 5 por segundo, el limite del plan gratuito.
 CENTRO = (-27.455266, -58.992536)
+# El radio de 30 km alcanza Corrientes capital (cruzando el puente), que no es
+# zona de reparto: los resultados de otra provincia se descartan.
+PROVINCIA_DEL_LOCAL = 'chaco'
+# Tipos de resultado que son un punto exacto. Si hay alguno, los vagos
+# ("Barranqueras", "Avenida San Martin" sin altura) no se muestran.
+RESULTADOS_EXACTOS = ('building', 'amenity')
+# Geoapify a veces tarda 6 s en buscar; los mosaicos pueden fallar sin problema.
+ESPERA_CONSULTA = 12
+ESPERA_MOSAICO = 7
 
 
 class ErrorMapa(Exception):
@@ -73,12 +85,16 @@ def _consultar(recurso, parametros, clave, mosaico=False):
 
 
 def _consultar_con_turno(recurso, parametros, clave, mosaico=False):
-    global _ultima_consulta
+    global _proximo_turno
     if not clave:
         raise ErrorMapa('Falta la clave de Geoapify. Cargala en Configuración o ingresá los kilómetros manualmente.')
     huella = hashlib.sha256((clave + recurso + json.dumps(parametros, sort_keys=True)).encode()).hexdigest()
     cache, control = caches['mapas'], caches['mapas_control']
-    # Un solo proceso Waitress: serializa duplicados y limita a menos de 5 solicitudes/segundo.
+    # Dentro del cerrojo va solo lo rapido: la cache, la cuota del dia y
+    # reservar el turno. La consulta por internet va AFUERA. Antes iba adentro
+    # y cada pedacito del mapa esperaba al anterior (~1 s cada uno): con unos
+    # 20 pedacitos el navegador se quedaba sin conexiones libres y el chequeo
+    # de estado no llegaba a tiempo -> "Sistema sin conexion".
     with _cerrojo:
         resultado = cache.get(huella)
         if resultado is not None:
@@ -95,42 +111,47 @@ def _consultar_con_turno(recurso, parametros, clave, mosaico=False):
             raise ErrorMapa('Se alcanzó el límite preventivo diario de consultas. Podés cargar los kilómetros manualmente.', 429)
         control.set(contador, cantidad + 1, 172800)
         control.set(creditos, gastados + costo, 172800)
-        espera = 0.26 - (time.monotonic() - _ultima_consulta)
-        if espera > 0:
-            time.sleep(espera)
-        _ultima_consulta = time.monotonic()
-        host = 'https://maps.geoapify.com/v1/' if mosaico else 'https://api.geoapify.com/v1/'
-        url = host + recurso + '?' + urlencode({**parametros, 'apiKey': clave})
-        try:
-            request = Request(url, headers={'User-Agent': 'EntreBrasas/1.0', 'Accept': 'image/png' if mosaico else 'application/json'})
-            with urlopen(request, timeout=7) as respuesta:
-                contenido = respuesta.read(1000001)
-                if len(contenido) > 1000000:
-                    raise ValueError('Respuesta demasiado grande')
-                if mosaico:
-                    if not contenido.startswith(b'\x89PNG\r\n\x1a\n'):
-                        raise ValueError('Mosaico inválido')
-                    cache.set(huella, contenido, 86400)
-                    return contenido
-                resultado = json.loads(contenido)
-                if not isinstance(resultado, dict):
-                    raise ValueError('Respuesta inválida')
-            # Guardar sólo features: el proveedor puede repetir apiKey en properties.
-            features = resultado.get('features')
-            if not isinstance(features, list):
+        # Turnos separados por ESPACIO_ENTRE_CONSULTAS: varias consultas viajan
+        # a la vez, pero nunca salen mas de 4 por segundo.
+        turno = max(time.monotonic(), _proximo_turno)
+        _proximo_turno = turno + ESPACIO_ENTRE_CONSULTAS
+
+    espera = turno - time.monotonic()
+    if espera > 0:
+        time.sleep(espera)
+
+    host = 'https://maps.geoapify.com/v1/' if mosaico else 'https://api.geoapify.com/v1/'
+    url = host + recurso + '?' + urlencode({**parametros, 'apiKey': clave})
+    try:
+        request = Request(url, headers={'User-Agent': 'EntreBrasas/1.0', 'Accept': 'image/png' if mosaico else 'application/json'})
+        with urlopen(request, timeout=ESPERA_MOSAICO if mosaico else ESPERA_CONSULTA) as respuesta:
+            contenido = respuesta.read(1000001)
+            if len(contenido) > 1000000:
+                raise ValueError('Respuesta demasiado grande')
+            if mosaico:
+                if not contenido.startswith(b'\x89PNG\r\n\x1a\n'):
+                    raise ValueError('Mosaico inválido')
+                cache.set(huella, contenido, 86400)
+                return contenido
+            resultado = json.loads(contenido)
+            if not isinstance(resultado, dict):
                 raise ValueError('Respuesta inválida')
-            resultado = {'features': features}
-            cache.set(huella, resultado, 86400)
-            return resultado
-        except HTTPError as error:
-            if error.code in (401, 403):
-                raise ErrorMapa('Geoapify rechazó la clave. Revisala en Configuración; podés seguir con distancia manual.') from None
-            if error.code == 429:
-                control.set('pausa', True, 300)
-                raise ErrorMapa('Geoapify alcanzó su límite de consultas. Cargá la distancia manualmente y probá más tarde.', 429) from None
-            raise ErrorMapa('No se pudo consultar Geoapify. Ingresá los kilómetros manualmente.') from None
-        except (URLError, TimeoutError, OSError, ValueError):
-            raise ErrorMapa('No hay respuesta del servicio de mapas. Ingresá los kilómetros manualmente.') from None
+        # Guardar sólo features: el proveedor puede repetir apiKey en properties.
+        features = resultado.get('features')
+        if not isinstance(features, list):
+            raise ValueError('Respuesta inválida')
+        resultado = {'features': features}
+        cache.set(huella, resultado, 86400)
+        return resultado
+    except HTTPError as error:
+        if error.code in (401, 403):
+            raise ErrorMapa('Geoapify rechazó la clave. Revisala en Configuración; podés seguir con distancia manual.') from None
+        if error.code == 429:
+            control.set('pausa', True, 300)
+            raise ErrorMapa('Geoapify alcanzó su límite de consultas. Cargá la distancia manualmente y probá más tarde.', 429) from None
+        raise ErrorMapa('No se pudo consultar Geoapify. Ingresá los kilómetros manualmente.') from None
+    except (URLError, TimeoutError, OSError, ValueError):
+        raise ErrorMapa('No hay respuesta del servicio de mapas. Ingresá los kilómetros manualmente.') from None
 
 
 def _datos(request):
@@ -170,6 +191,41 @@ def mosaico_mapa(request, z, x, y):
         return respuesta
 
 
+def limpiar_resultados(features):
+    """
+    Deja solo las direcciones que tiene sentido ofrecer, para no llenar la
+    pantalla de opciones parecidas:
+
+    1. Solo de la provincia del local (Corrientes capital entra en el radio).
+    2. Un solo resultado por punto: Geoapify repite la misma esquina con
+       nombres de barrio distintos.
+    3. Si hay alguna direccion exacta (con altura), se descartan las vagas
+       (una ciudad sola, una calle sin numero).
+    """
+    candidatos, puntos_vistos = [], set()
+    for feature in features:
+        try:
+            propiedades = feature['properties']
+            provincia = str(propiedades.get('state') or '').lower()
+            if provincia and PROVINCIA_DEL_LOCAL not in provincia:
+                continue
+            lat, lon = coordenadas(propiedades['lat'], propiedades['lon'])
+            punto = (round(lat, 4), round(lon, 4))  # ~10 metros
+            if punto in puntos_vistos:
+                continue
+            puntos_vistos.add(punto)
+            exacta = propiedades.get('result_type') in RESULTADOS_EXACTOS
+            aproximada = propiedades.get('result_type') != 'building' or propiedades.get('rank', {}).get('match_type') not in ('full_match', 'match_by_building')
+            candidatos.append((exacta, {'direccion': str(propiedades['formatted'])[:300],
+                                        'latitud': lat, 'longitud': lon, 'aproximada': aproximada}))
+        except (KeyError, TypeError, AttributeError, ErrorMapa):
+            continue
+
+    if any(exacta for exacta, _ in candidatos):
+        candidatos = [c for c in candidatos if c[0]]
+    return [resultado for _, resultado in candidatos][:5]
+
+
 @never_cache
 @require_POST
 def buscar_direccion(request):
@@ -179,22 +235,14 @@ def buscar_direccion(request):
         if not isinstance(texto, str) or not 3 <= len(texto.strip()) <= 300 or '://' in texto:
             raise ErrorMapa('Escribí una calle y altura o un lugar; no un enlace de Google Maps.', 400)
         config = Configuracion.get_config()
+        # Se piden 8 porque despues se descartan los de otra provincia,
+        # los repetidos y los vagos; se muestran como mucho 5.
         respuesta = _consultar('geocode/search', {
-            'text': texto.strip(), 'lang': 'es', 'limit': 5,
+            'text': texto.strip(), 'lang': 'es', 'limit': 8,
             'filter': f'circle:{CENTRO[1]},{CENTRO[0]},30000',
             'bias': f'proximity:{config.local_longitud},{config.local_latitud}',
         }, config.geoapify_api_key)
-        resultados = []
-        for feature in respuesta.get('features', [])[:5]:
-            try:
-                propiedades = feature['properties']
-                lat, lon = coordenadas(propiedades['lat'], propiedades['lon'])
-                direccion = str(propiedades['formatted'])[:300]
-                aproximada = propiedades.get('result_type') != 'building' or propiedades.get('rank', {}).get('match_type') not in ('full_match', 'match_by_building')
-                resultados.append({'direccion': direccion, 'latitud': lat, 'longitud': lon, 'aproximada': aproximada})
-            except (KeyError, TypeError, AttributeError, ErrorMapa):
-                continue
-        return JsonResponse({'resultados': resultados})
+        return JsonResponse({'resultados': limpiar_resultados(respuesta.get('features', []))})
     except ErrorMapa as error:
         return JsonResponse({'error': str(error)}, status=error.estado)
 

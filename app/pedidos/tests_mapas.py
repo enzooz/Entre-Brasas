@@ -1,5 +1,7 @@
 import json
 import math
+import threading
+import time
 from datetime import datetime, timezone
 from decimal import Decimal
 from unittest import mock
@@ -168,6 +170,61 @@ class MapasTests(TestCase):
         dia = datetime.now(timezone.utc).strftime('%Y-%m-%d')
         self.assertEqual(caches['mapas_control'].get('creditos_cuartos:' + dia), 1)
         self.assertEqual(self.client.get(url, HTTP_SEC_FETCH_SITE='cross-site').status_code, 403)
+
+    def test_busqueda_sin_otra_provincia_ni_repetidos_ni_vagos(self):
+        """Casos reales de Geoapify: "Av San Martin 2500, Barranqueras" y "Belgrano 800"."""
+        def lugar(tipo, nombre, lat, lon, provincia='Chaco'):
+            return {'properties': {'result_type': tipo, 'formatted': nombre, 'lat': lat, 'lon': lon, 'state': provincia,
+                                   'rank': {'match_type': 'full_match'}}}
+        features = [
+            lugar('city', 'Barranqueras, CC, Argentina', -27.48299, -58.93579),
+            lugar('building', 'Avenida San Martín 2500, Villa Palermo 2', -27.47514, -59.0045),
+            lugar('building', 'Avenida San Martín 2500, Villa Centenario', -27.47514, -59.0045),  # mismo punto
+            lugar('street', 'Avenida San Martín, Resistencia', -27.45655, -58.98392),
+            lugar('building', 'Avenida San Martín 2500, Fontana', -27.41412, -59.01872),
+            lugar('building', 'Belgrano 800, Corrientes', -27.47175, -58.84085, provincia='Corrientes'),
+        ]
+        self.assertEqual([r['direccion'] for r in mapas.limpiar_resultados(features)], [
+            'Avenida San Martín 2500, Villa Palermo 2',
+            'Avenida San Martín 2500, Fontana',
+        ])
+        # Si no hay ninguna exacta, se ofrecen las vagas antes que nada.
+        vagas = [features[0], features[3]]
+        self.assertEqual(len(mapas.limpiar_resultados(vagas)), 2)
+
+    def test_mosaicos_viajan_en_paralelo_respetando_los_turnos(self):
+        """
+        Antes cada consulta esperaba a la anterior con el cerrojo tomado: 20
+        mosaicos de ~1 s bloqueaban las conexiones del navegador y el chequeo
+        de estado mostraba "Sistema sin conexion". Ahora viajan a la vez, pero
+        separadas por ESPACIO_ENTRE_CONSULTAS.
+        """
+        png = b'\x89PNG\r\n\x1a\nprueba'
+        salidas = []
+
+        def remoto_lento(request, timeout):
+            salidas.append(time.monotonic())
+            time.sleep(0.5)  # Lo que tarda Geoapify en responder.
+            respuesta = mock.MagicMock()
+            respuesta.__enter__.return_value.read.return_value = png
+            return respuesta
+
+        with mock.patch('pedidos.mapas.urlopen', side_effect=remoto_lento):
+            inicio = time.monotonic()
+            hilos = [threading.Thread(target=mapas._consultar, args=(f'tile/osm-carto/14/{x}/1.png', {}, 'clave', True))
+                     for x in range(4)]
+            for hilo in hilos:
+                hilo.start()
+            for hilo in hilos:
+                hilo.join()
+            total = time.monotonic() - inicio
+
+        self.assertEqual(len(salidas), 4)
+        # En fila hubieran sido 4 x (0.5 + 0.26) = ~3 s.
+        self.assertLess(total, 2)
+        salidas.sort()
+        for anterior, siguiente in zip(salidas, salidas[1:]):
+            self.assertGreaterEqual(siguiente - anterior, mapas.ESPACIO_ENTRE_CONSULTAS - 0.02)
 
     def test_no_consulta_mosaicos_fuera_de_area(self):
         with mock.patch('pedidos.mapas.urlopen') as remote:

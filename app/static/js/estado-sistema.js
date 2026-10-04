@@ -11,6 +11,14 @@ document.addEventListener('DOMContentLoaded', function () {
     var confirmedOff = false;
     var checking = false;
     var reachable = false;
+    // Un chequeo puede tardar aunque el servidor ande bien: por ejemplo, si el
+    // mapa esta cargando y el navegador tiene sus 6 conexiones ocupadas.
+    // Por eso "sin conexion" se muestra recien despues de varias fallas seguidas:
+    //   - servidor caido: cada intento falla al instante -> bloquea en ~6 s.
+    //   - solo hay fila: cada intento tarda 2,5 s en fallar -> aguanta mas de 10 s.
+    // El apagado confirmado (boton Apagar) no espera: bloquea enseguida.
+    var FALLAS_PARA_BLOQUEAR = 4;
+    var fallasSeguidas = 0;
 
     function lock(confirmed) {
         confirmedOff = confirmedOff || confirmed;
@@ -62,6 +70,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!response.ok) throw new Error('Estado no disponible');
             var state = await response.json();
             if (typeof state.instancia !== 'string' || typeof state.apagando !== 'boolean') throw new Error('Estado inválido');
+            fallasSeguidas = 0;
             if (state.apagando && state.instancia === instance) broadcastOff();
             else if (state.instancia !== instance) lock(true);
             // Una respuesta vieja de esta ejecución no habilita la reapertura.
@@ -71,7 +80,8 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         } catch (error) {
             reachable = false;
-            lock(false);
+            fallasSeguidas++;
+            if (locked || fallasSeguidas >= FALLAS_PARA_BLOQUEAR) lock(false);
         } finally {
             window.clearTimeout(timeout);
             checking = false;

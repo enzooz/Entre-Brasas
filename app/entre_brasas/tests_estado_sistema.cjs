@@ -88,9 +88,26 @@ test('el bloqueo detiene clicks, teclado y envío incluso sin soporte de inert',
     }
 });
 
+test('un chequeo lento o fallido suelto no bloquea (por ejemplo, mientras carga el mapa)', async () => {
+    const ui = setup({state: new Error('Tardó demasiado')});
+    await ui.tick();  // Chequeo inicial + uno del intervalo: 2 fallas seguidas.
+    await ui.tick();  // 3 fallas: todavia no bloquea.
+    assert.equal(ui.classes.has('system-off'), false);
+    ui.setState({instancia: 'actual', apagando: false});
+    await ui.tick();  // Responde: se reinicia la cuenta.
+    ui.setState(new Error('Tardó demasiado'));
+    await ui.tick();
+    await ui.tick();
+    await ui.tick();
+    assert.equal(ui.classes.has('system-off'), false);
+    assert.equal(ui.ids['system-off-notice'].hidden, true);
+});
+
 test('una conexión perdida bloquea sin afirmar un apagado confirmado', async () => {
     const ui = setup({state: new Error('No conecta')});
     await ui.tick();
+    await ui.tick();
+    await ui.tick();  // Recién con 4 fallas seguidas se bloquea.
     assert.equal(ui.classes.has('system-off'), true);
     assert.equal(ui.ids['system-off-title'].textContent, 'Sistema sin conexión');
     assert.equal(ui.ids['system-reconnect'].disabled, true);
