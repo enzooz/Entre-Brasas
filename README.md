@@ -577,8 +577,7 @@ Entre Brasas/
 
 | Documento | De que trata |
 |---|---|
-| [docs/backend.md](docs/backend.md) | Que hace cada modulo del backend |
-| [docs/base-de-datos.md](docs/base-de-datos.md) | Motor, esquema, datos y como se corre la base |
+| [docs/base-de-datos.md](docs/base-de-datos.md) | Motor, tablas y como consultar la base |
 | [docs/plan-mejoras-pendientes.md](docs/plan-mejoras-pendientes.md) | Bugs, decisiones y tandas de trabajo pendientes |
 | [docs/ideas/cierre-del-dia.md](docs/ideas/cierre-del-dia.md) | Propuesta del modulo "Cerrar el dia" |
 | [docs/presentacion-alcance-completo.pdf](docs/presentacion-alcance-completo.pdf) | Presentacion del alcance del proyecto |

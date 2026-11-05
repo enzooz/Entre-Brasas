@@ -93,11 +93,6 @@ class Pedido(models.Model):
         """
         return self.SIGUIENTE_ESTADO.get(self.estado)
 
-    @property
-    def siguiente_estado_display(self):
-        """El texto del siguiente estado ("En camino"), para mostrar en el boton."""
-        return dict(self.ESTADOS).get(self.siguiente_estado, '')
-
     def __str__(self):
         return f"Pedido #{self.pk} - {self.cliente_nombre}"
 

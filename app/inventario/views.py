@@ -14,7 +14,7 @@ from django.urls import reverse
 
 from menu.models import Hamburguesa, Adicional
 
-from .models import Ingrediente, MovimientoInventario, Receta, formatear_cantidad, ingredientes_del_menu_activo
+from .models import Ingrediente, Receta, formatear_cantidad, ingredientes_del_menu_activo
 from .forms import IngredienteForm, MovimientoForm, RecetaForm
 
 
