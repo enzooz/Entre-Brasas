@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const fs = require('node:fs');
 const path = require('node:path');
-const source = fs.readFileSync(path.join(__dirname, '../static/js/borrador-pedido.js'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '../../static/js/borrador-pedido.js'), 'utf8');
 const key = 'entre-brasas-pedido-borrador-v1';
 const token = '75c33a01-fb02-4c8f-8103-ffea8f13be01';
 

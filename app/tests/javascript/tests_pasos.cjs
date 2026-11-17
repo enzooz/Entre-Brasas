@@ -4,10 +4,10 @@ const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const fs = require('node:fs');
 const path = require('node:path');
-const source = fs.readFileSync(path.join(__dirname, '../static/js/pasos-pedido.js'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '../../static/js/pasos-pedido.js'), 'utf8');
 
 test('nombre y teléfono no heredan el margen vertical entre párrafos', () => {
-    const css = fs.readFileSync(path.join(__dirname, '../static/css/sistema.css'), 'utf8');
+    const css = fs.readFileSync(path.join(__dirname, '../../static/css/sistema.css'), 'utf8');
     assert.match(css, /\.order-wizard \.client-fields > p\s*\{\s*margin:\s*0;\s*\}/);
 });
 

@@ -59,21 +59,6 @@ nav {
     overflow-y: auto;
 }
 
-nav .logo {
-    text-align: center;
-    padding: 25px 20px;
-    background: rgba(0, 0, 0, 0.2);
-    border-bottom: 3px solid var(--accent);
-}
-
-nav .logo h2 {
-    color: var(--text-white);
-    font-size: 1.6rem;
-    margin: 0;
-    padding: 0;
-    border: none;
-}
-
 nav ul {
     list-style: none;
     padding: 15px 0;
@@ -255,15 +240,6 @@ button, .btn {
     background-color: #5A6268;
 }
 
-.btn-success {
-    background-color: var(--success);
-    color: var(--text-white);
-}
-
-.btn-success:hover {
-    background-color: #218838;
-}
-
 .btn-danger {
     background-color: var(--danger);
     color: var(--text-white);
@@ -418,11 +394,6 @@ h3 {
     filter: brightness(0.9);
 }
 
-/* Alert for low stock */
-.highlight {
-    background-color: #FFF3CD !important;
-}
-
 /* Filter bar */
 .filter-bar {
     display: flex;
@@ -547,30 +518,6 @@ form.form-boton {
     border: 1px solid var(--border);
 }
 
-/* Product item in create order */
-.producto-item {
-    background: #F8FAFC;
-    padding: 18px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    border: 1px solid var(--border);
-}
-
-.producto-item > * {
-    margin-bottom: 12px;
-}
-
-.addons-container {
-    padding-left: 15px;
-}
-
-.addons-container label {
-    display: inline;
-    margin-right: 18px;
-    font-weight: normal;
-    font-size: 0.9rem;
-}
-
 /* El atributo hidden tiene que ganarle a cualquier display de otra regla
    (por ejemplo, un selector con display: flex que se esconde por JS). */
 [hidden] {
@@ -652,20 +599,6 @@ form.form-boton {
 .contador {
     display: flex;
     align-items: center;
-}
-
-.boton-contador {
-    width: 38px;
-    height: 38px;
-    padding: 0;
-    font-size: 1.2rem;
-    background: var(--bg-white);
-    color: var(--primary);
-    border: 1px solid var(--border);
-}
-
-.boton-contador:hover {
-    background: #EEF3FB;
 }
 
 form .contador input.cantidad {

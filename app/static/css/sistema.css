@@ -205,7 +205,7 @@ p + p { margin-top: 10px; }
 .btn-info { background: #eaf0ff; color: #2450bf; }.btn-info:hover { background: #dce7ff; color: #1942ad; }
 .btn-warning { background: #fff2dc; color: #805200; }.btn-warning:hover { background: #ffe7bc; }
 .btn-danger { background: #b43242; color: #fff; }.btn-danger:hover { background: #942736; }
-.btn-success, .btn-whatsapp { background: #16724c; color: #fff; }.btn-success:hover, .btn-whatsapp:hover { background: #105d3d; }
+.btn-whatsapp { background: #16724c; color: #fff; }.btn-whatsapp:hover { background: #105d3d; }
 .card { border: 1px solid var(--border); border-left-width: 1px; border-radius: var(--radius-md); box-shadow: none; padding: 24px; margin-bottom: 20px; }
 .card h2 { margin-top: 0; }.card p { margin-bottom: 13px; }
 form { box-shadow: none; border-radius: var(--radius-md); padding: 24px; }
@@ -336,7 +336,7 @@ body.order-client-step .order-wizard .order-fields { min-height: min-content; }
 .fila-encabezado { flex-wrap: wrap; gap: 10px; }
 .fila-unidad { margin-left: auto; color: var(--primary-dark); background: var(--primary-light); border-radius: 6px; padding: 4px 8px; font-size: 12px; font-weight: 700; }
 .etiqueta-nota { display: block; margin: 14px 0 6px; }
-.boton-contador { min-height: 36px; width: 36px; height: 36px; padding: 0; } form .contador input.cantidad { min-height: 36px; height: 36px; width: 46px; }
+form .contador input.cantidad { min-height: 36px; height: 36px; width: 46px; }
 .boton-quitar { font-size: 11px; }.opcion span { font-size: 12px; padding: 10px 14px; border-radius: 8px; min-height: 42px; }
 .selector-grande .opcion { flex-basis: 140px; }.selector-grande .opcion span { padding: 14px; font-size: 12px; }
 .chip span { padding: 7px 11px; font-size: 11px; border-style: solid; }.opcion input:focus-visible + span, .chip input:focus-visible + span { outline: 3px solid #537dea; outline-offset: 3px; box-shadow: none; }

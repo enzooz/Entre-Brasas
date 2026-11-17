@@ -158,7 +158,7 @@ porque los medallones se terminan en pocos días y vuelve a frenar.
 
 Nota histórica: las cantidades agrupadas y nombres Simple/Doble/Triple descritos
 abajo fueron reemplazados el 30/09 por unidades independientes y cantidades
-explícitas de medallones extra. Ver `cambios-menu-envio-personalizacion.md`.
+explícitas de medallones extra.
 
 En el local los pedidos llegan por WhatsApp y el que está en la PC se los
 reenvía a la cocina con un WhatsApp escrito a mano. Ahora el pedido se carga
