@@ -11,8 +11,26 @@ La base tiene **15 tablas**:
 Las apps `reportes` y `costos` **no tienen tablas propias**: calculan todo
 leyendo las tablas de pedidos, menú e inventario.
 
-Todas las tablas tienen una columna `id`, que es la clave primaria (un entero
-autoincremental). No se repite abajo.
+---
+
+## Cómo leer las tablas
+
+Cada tabla tiene estas columnas:
+
+- **Tipo Django:** el campo tal como está en `models.py` (por ejemplo `CharField(200)`).
+- **Tipo SQL:** cómo quedó declarada la columna en SQLite, sacado del
+  `CREATE TABLE` real de la base (por ejemplo `varchar(200)`).
+- **Restricciones:** las reglas que controla la propia base:
+  - `PK`: clave primaria. Todas las tablas tienen `id`, un entero autoincremental.
+  - `NOT NULL`: no puede quedar vacía. `NULL` quiere decir que sí puede.
+  - `UNIQUE`: no se puede repetir el valor.
+  - `CHECK ≥ 0`: no acepta números negativos.
+  - `FK → tabla`: clave foránea que apunta al `id` de esa tabla.
+- **Descripción:** qué guarda. Los valores **por defecto** también figuran
+  ahí; esos los completa Django al guardar, no la base.
+
+En SQLite los `bool` se guardan como `0` o `1`, y los `datetime` como texto con
+fecha y hora.
 
 ---
 
@@ -50,35 +68,38 @@ apunta a A. "Opcional" quiere decir que esa FK puede quedar vacía.
 
 ### `menu_hamburguesa`
 
-| Columna | Tipo | Obligatorio | Qué guarda |
-|---|---|---|---|
-| `nombre` | texto (100), **único** | Sí | Nombre de la hamburguesa |
-| `descripcion` | texto largo | Sí | Descripción para el menú |
-| `precio` | entero ≥ 0 | Sí | Precio en pesos, sin centavos |
-| `incluye_papas` | sí/no | Sí (por defecto sí) | Si viene con papas |
-| `activa` | sí/no | Sí (por defecto sí) | En vez de borrarla, se desactiva |
+| Columna | Tipo Django | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|---|
+| `id` | `BigAutoField` | `integer` | PK, autoincremental | Identificador |
+| `nombre` | `CharField(100)` | `varchar(100)` | NOT NULL, UNIQUE | Nombre de la hamburguesa |
+| `descripcion` | `TextField` | `text` | NOT NULL | Descripción para el menú |
+| `precio` | `PositiveIntegerField` | `integer unsigned` | NOT NULL, CHECK ≥ 0 | Precio en pesos, sin centavos |
+| `incluye_papas` | `BooleanField` | `bool` | NOT NULL | Si viene con papas. Por defecto sí |
+| `activa` | `BooleanField` | `bool` | NOT NULL | En vez de borrarla, se desactiva. Por defecto sí |
 
 ### `menu_adicional`
 
-| Columna | Tipo | Obligatorio | Qué guarda |
-|---|---|---|---|
-| `nombre` | texto (100), **único** | Sí | Nombre del extra (bacon, huevo...) |
-| `precio` | entero ≥ 0 | Sí | Precio en pesos |
-| `activo` | sí/no | Sí (por defecto sí) | En vez de borrarlo, se desactiva |
-| `es_medallon_extra` | sí/no | Sí (por defecto no) | Marca el adicional que hace a la hamburguesa doble o triple |
+| Columna | Tipo Django | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|---|
+| `id` | `BigAutoField` | `integer` | PK, autoincremental | Identificador |
+| `nombre` | `CharField(100)` | `varchar(100)` | NOT NULL, UNIQUE | Nombre del extra (bacon, huevo...) |
+| `precio` | `PositiveIntegerField` | `integer unsigned` | NOT NULL, CHECK ≥ 0 | Precio en pesos |
+| `activo` | `BooleanField` | `bool` | NOT NULL | En vez de borrarlo, se desactiva. Por defecto sí |
+| `es_medallon_extra` | `BooleanField` | `bool` | NOT NULL | Marca el adicional que hace a la hamburguesa doble o triple. Por defecto no |
 
 ### `menu_adicional_hamburguesas` (tabla intermedia)
 
 Relación **muchos a muchos**: qué adicional se puede pedir en qué hamburguesa.
 No tiene modelo propio. Django la crea sola a partir del campo
-`Adicional.hamburguesas`.
+`hamburguesas = ManyToManyField(Hamburguesa)` del modelo `Adicional`.
 
-| Columna | Tipo | Obligatorio | Qué guarda |
-|---|---|---|---|
-| `adicional_id` | FK → `menu_adicional` | Sí | El adicional |
-| `hamburguesa_id` | FK → `menu_hamburguesa` | Sí | La hamburguesa donde se ofrece |
+| Columna | Tipo Django | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|---|
+| `id` | (automático) | `integer` | PK, autoincremental | Identificador |
+| `adicional_id` | (automático) | `bigint` | NOT NULL, FK → `menu_adicional` | El adicional |
+| `hamburguesa_id` | (automático) | `bigint` | NOT NULL, FK → `menu_hamburguesa` | La hamburguesa donde se ofrece |
 
-El par (`adicional_id`, `hamburguesa_id`) es **único**: el mismo vínculo no se
+El par (`adicional_id`, `hamburguesa_id`) es **UNIQUE**: el mismo vínculo no se
 puede repetir.
 
 ---
@@ -87,29 +108,33 @@ puede repetir.
 
 ### `inventario_ingrediente`
 
-| Columna | Tipo | Obligatorio | Qué guarda |
-|---|---|---|---|
-| `nombre` | texto (100), **único** | Sí | Nombre del insumo |
-| `stock_actual` | decimal (10 dígitos, 2 decimales) | Sí (por defecto 0) | Cuánto hay. **Puede quedar negativo**: el sistema nunca frena un pedido por falta de stock, solo avisa |
-| `unidad` | texto (10) | Sí | Una de: `kg`, `g`, `L`, `mL`, `unidades` |
-| `stock_minimo` | decimal (10, 2) | Sí | Debajo de este valor se avisa que hay que reponer |
-| `precio_compra` | entero ≥ 0 | Sí (por defecto 0) | Precio de la última compra, por unidad. Se usa para los costos |
-| `activo` | sí/no | Sí (por defecto sí) | En vez de borrarlo, se desactiva |
+| Columna | Tipo Django | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|---|
+| `id` | `BigAutoField` | `integer` | PK, autoincremental | Identificador |
+| `nombre` | `CharField(100)` | `varchar(100)` | NOT NULL, UNIQUE | Nombre del insumo |
+| `stock_actual` | `DecimalField(10,2)` | `decimal` | NOT NULL | Cuánto hay. Por defecto 0. **Puede quedar negativo**: el sistema nunca frena un pedido por falta de stock, solo avisa |
+| `unidad` | `CharField(10)` | `varchar(10)` | NOT NULL | Una de: `kg`, `g`, `L`, `mL`, `unidades` |
+| `stock_minimo` | `DecimalField(10,2)` | `decimal` | NOT NULL | Debajo de este valor se avisa que hay que reponer |
+| `precio_compra` | `PositiveIntegerField` | `integer unsigned` | NOT NULL, CHECK ≥ 0 | Precio de la última compra, por unidad. Se usa para los costos. Por defecto 0 |
+| `activo` | `BooleanField` | `bool` | NOT NULL | En vez de borrarlo, se desactiva. Por defecto sí |
+
+`DecimalField(10,2)` significa hasta 10 dígitos en total, 2 de ellos decimales.
 
 ### `inventario_receta`
 
 Cada fila es **una línea de receta**: "tal producto lleva tanto de tal
 ingrediente". La receta completa de un producto son varias filas.
 
-| Columna | Tipo | Obligatorio | Qué guarda |
-|---|---|---|---|
-| `hamburguesa_id` | FK → `menu_hamburguesa` | No | La hamburguesa, si la receta es de una hamburguesa |
-| `adicional_id` | FK → `menu_adicional` | No | El adicional, si la receta es de un adicional |
-| `ingrediente_id` | FK → `inventario_ingrediente` | Sí | El insumo |
-| `cantidad_requerida` | decimal (10, 2) | Sí | Cuánto lleva **una unidad** del producto |
+| Columna | Tipo Django | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|---|
+| `id` | `BigAutoField` | `integer` | PK, autoincremental | Identificador |
+| `hamburguesa_id` | `ForeignKey(Hamburguesa)` | `bigint` | NULL, FK → `menu_hamburguesa` | La hamburguesa, si la receta es de una hamburguesa |
+| `adicional_id` | `ForeignKey(Adicional)` | `bigint` | NULL, FK → `menu_adicional` | El adicional, si la receta es de un adicional |
+| `ingrediente_id` | `ForeignKey(Ingrediente)` | `bigint` | NOT NULL, FK → `inventario_ingrediente` | El insumo |
+| `cantidad_requerida` | `DecimalField(10,2)` | `decimal` | NOT NULL | Cuánto lleva **una unidad** del producto |
 
 Una receta es de una hamburguesa **o** de un adicional, nunca de los dos. Por
-eso esas dos columnas aceptan vacío (NULL). La base no lo controla con una
+eso esas dos columnas aceptan NULL. La base no lo controla con una
 restricción: lo respeta el código que carga las recetas.
 
 ### `inventario_movimientoinventario`
@@ -117,15 +142,16 @@ restricción: lo respeta el código que carga las recetas.
 El historial de **todas** las entradas y salidas de stock. **No se edita ni
 se borra**: para revertir algo se carga el movimiento contrario.
 
-| Columna | Tipo | Obligatorio | Qué guarda |
-|---|---|---|---|
-| `ingrediente_id` | FK → `inventario_ingrediente` | Sí | Qué insumo se movió |
-| `tipo` | texto (10) | Sí | `entrada` o `salida` |
-| `cantidad` | decimal (10, 2) | Sí | Cuánto se movió |
-| `motivo` | texto (255) | Sí | Por qué (compra, pedido, pérdida, conteo...) |
-| `precio_unitario` | entero ≥ 0 | Sí (por defecto 0) | Precio pagado por unidad, solo en compras |
-| `fecha` | fecha y hora | Sí (automática) | Cuándo se registró |
-| `pedido_relacionado_id` | FK → `pedidos_pedido` | No | El pedido que lo generó, si lo generó un pedido |
+| Columna | Tipo Django | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|---|
+| `id` | `BigAutoField` | `integer` | PK, autoincremental | Identificador |
+| `ingrediente_id` | `ForeignKey(Ingrediente)` | `bigint` | NOT NULL, FK → `inventario_ingrediente` | Qué insumo se movió |
+| `tipo` | `CharField(10)` | `varchar(10)` | NOT NULL | `entrada` o `salida` |
+| `cantidad` | `DecimalField(10,2)` | `decimal` | NOT NULL | Cuánto se movió |
+| `motivo` | `CharField(255)` | `varchar(255)` | NOT NULL | Por qué (compra, pedido, pérdida, conteo...) |
+| `precio_unitario` | `PositiveIntegerField` | `integer unsigned` | NOT NULL, CHECK ≥ 0 | Precio pagado por unidad, solo en compras. Por defecto 0 |
+| `fecha` | `DateTimeField(auto_now_add)` | `datetime` | NOT NULL | Cuándo se registró. La pone Django sola al crear la fila |
+| `pedido_relacionado_id` | `ForeignKey(Pedido)` | `bigint` | NULL, FK → `pedidos_pedido` | El pedido que lo generó, si lo generó un pedido |
 
 El **conteo** (cargar lo que se contó en la cocina) no es un tipo aparte. Se
 calcula la diferencia con el stock del sistema y se guarda como una entrada o
@@ -139,65 +165,70 @@ una salida, con el motivo "Conteo: había X, se contaron Y".
 
 Los clientes guardados, para no volver a escribir sus datos.
 
-| Columna | Tipo | Obligatorio | Qué guarda |
-|---|---|---|---|
-| `nombre` | texto (200) | Sí | Nombre |
-| `telefono` | texto (50) | Puede quedar vacío | Teléfono tal como se escribió |
-| `telefono_clave` | texto (20), **único** | No | Solo los dígitos del teléfono. Identifica al cliente sin duplicarlo |
-| `direccion` | texto (300) | Puede quedar vacío | Última dirección usada |
-| `fecha_alta` | fecha y hora | Sí (automática) | Cuándo se creó |
-| `fecha_actualizacion` | fecha y hora | Sí (automática) | Última vez que se modificó |
+| Columna | Tipo Django | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|---|
+| `id` | `BigAutoField` | `integer` | PK, autoincremental | Identificador |
+| `nombre` | `CharField(200)` | `varchar(200)` | NOT NULL | Nombre |
+| `telefono` | `CharField(50)` | `varchar(50)` | NOT NULL | Teléfono tal como se escribió. Puede ser texto vacío |
+| `telefono_clave` | `CharField(20)` | `varchar(20)` | NULL, UNIQUE | Solo los dígitos del teléfono. Identifica al cliente sin duplicarlo |
+| `direccion` | `CharField(300)` | `varchar(300)` | NOT NULL | Última dirección usada. Puede ser texto vacío |
+| `fecha_alta` | `DateTimeField(auto_now_add)` | `datetime` | NOT NULL | Cuándo se creó. La pone Django |
+| `fecha_actualizacion` | `DateTimeField(auto_now)` | `datetime` | NOT NULL | Última vez que se modificó. La actualiza Django en cada guardado |
 
 ### `pedidos_pedido`
 
-| Columna | Tipo | Obligatorio | Qué guarda |
-|---|---|---|---|
-| `cliente_id` | FK → `pedidos_cliente` | No | El cliente guardado al que pertenece |
-| `cliente_nombre` | texto (200) | Sí | **Copia** del nombre al momento del pedido |
-| `cliente_telefono` | texto (50) | Sí | **Copia** del teléfono |
-| `cliente_direccion` | texto (300) | Sí | **Copia** de la dirección |
-| `observaciones` | texto largo | No | Notas del pedido |
-| `metodo_pago` | texto (20) | Sí | `efectivo` o `transferencia` |
-| `distancia_km` | decimal (5, 2) | Sí (por defecto 0) | Distancia del envío |
-| `costo_envio` | entero ≥ 0 | Sí (por defecto 0) | Lo que se cobró de envío |
-| `retiro_local` | sí/no | Sí (por defecto no) | Si lo retira en el local (envío $0) |
-| `total` | entero ≥ 0 | Sí | Total cobrado, calculado al crear el pedido |
-| `estado` | texto (20) | Sí (por defecto `pendiente`) | `pendiente`, `en_preparacion`, `en_camino`, `entregado` o `cancelado` |
-| `fecha_creacion` | fecha y hora | Sí (automática) | Cuándo se cargó |
+| Columna | Tipo Django | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|---|
+| `id` | `BigAutoField` | `integer` | PK, autoincremental | Número de pedido |
+| `cliente_id` | `ForeignKey(Cliente)` | `bigint` | NULL, FK → `pedidos_cliente` | El cliente guardado al que pertenece |
+| `cliente_nombre` | `CharField(200)` | `varchar(200)` | NOT NULL | **Copia** del nombre al momento del pedido |
+| `cliente_telefono` | `CharField(50)` | `varchar(50)` | NOT NULL | **Copia** del teléfono |
+| `cliente_direccion` | `CharField(300)` | `varchar(300)` | NOT NULL | **Copia** de la dirección |
+| `observaciones` | `TextField` | `text` | NULL | Notas del pedido |
+| `metodo_pago` | `CharField(20)` | `varchar(20)` | NOT NULL | `efectivo` o `transferencia` |
+| `distancia_km` | `DecimalField(5,2)` | `decimal` | NOT NULL | Distancia del envío. Por defecto 0 |
+| `costo_envio` | `PositiveIntegerField` | `integer unsigned` | NOT NULL, CHECK ≥ 0 | Lo que se cobró de envío. Por defecto 0 |
+| `retiro_local` | `BooleanField` | `bool` | NOT NULL | Si lo retira en el local (envío $0). Por defecto no |
+| `total` | `PositiveIntegerField` | `integer unsigned` | NOT NULL, CHECK ≥ 0 | Total cobrado, calculado al crear el pedido |
+| `estado` | `CharField(20)` | `varchar(20)` | NOT NULL | `pendiente`, `en_preparacion`, `en_camino`, `entregado` o `cancelado`. Por defecto `pendiente` |
+| `fecha_creacion` | `DateTimeField(auto_now_add)` | `datetime` | NOT NULL | Cuándo se cargó. La pone Django |
 
 ### `pedidos_itempedido`
 
 Cada hamburguesa pedida dentro de un pedido.
 
-| Columna | Tipo | Obligatorio | Qué guarda |
-|---|---|---|---|
-| `pedido_id` | FK → `pedidos_pedido` | Sí | A qué pedido pertenece |
-| `hamburguesa_id` | FK → `menu_hamburguesa` | Sí | Qué hamburguesa |
-| `cantidad` | entero ≥ 0 | Sí (por defecto 1) | Cuántas |
-| `precio_unitario` | entero ≥ 0 | Sí | **Copia** del precio al momento de la venta |
-| `nota` | texto (200) | Puede quedar vacío | Pedido especial para la cocina ("sin cebolla") |
+| Columna | Tipo Django | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|---|
+| `id` | `BigAutoField` | `integer` | PK, autoincremental | Identificador |
+| `pedido_id` | `ForeignKey(Pedido)` | `bigint` | NOT NULL, FK → `pedidos_pedido` | A qué pedido pertenece |
+| `hamburguesa_id` | `ForeignKey(Hamburguesa)` | `bigint` | NOT NULL, FK → `menu_hamburguesa` | Qué hamburguesa |
+| `cantidad` | `PositiveIntegerField` | `integer unsigned` | NOT NULL, CHECK ≥ 0 | Cuántas. Por defecto 1 |
+| `precio_unitario` | `PositiveIntegerField` | `integer unsigned` | NOT NULL, CHECK ≥ 0 | **Copia** del precio al momento de la venta |
+| `nota` | `CharField(200)` | `varchar(200)` | NOT NULL | Pedido especial para la cocina ("sin cebolla"). Puede ser texto vacío |
 
 ### `pedidos_adicionaldeitem`
 
 Cada extra aplicado a una hamburguesa pedida.
 
-| Columna | Tipo | Obligatorio | Qué guarda |
-|---|---|---|---|
-| `item_id` | FK → `pedidos_itempedido` | Sí | A qué hamburguesa del pedido |
-| `adicional_id` | FK → `menu_adicional` | Sí | Qué adicional |
-| `precio` | entero ≥ 0 | Sí | **Copia** del precio al momento de la venta |
+| Columna | Tipo Django | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|---|
+| `id` | `BigAutoField` | `integer` | PK, autoincremental | Identificador |
+| `item_id` | `ForeignKey(ItemPedido)` | `bigint` | NOT NULL, FK → `pedidos_itempedido` | A qué hamburguesa del pedido |
+| `adicional_id` | `ForeignKey(Adicional)` | `bigint` | NOT NULL, FK → `menu_adicional` | Qué adicional |
+| `precio` | `PositiveIntegerField` | `integer unsigned` | NOT NULL, CHECK ≥ 0 | **Copia** del precio al momento de la venta |
 
 ### `pedidos_historialestado`
 
 Cada cambio de estado de un pedido.
 
-| Columna | Tipo | Obligatorio | Qué guarda |
-|---|---|---|---|
-| `pedido_id` | FK → `pedidos_pedido` | Sí | Qué pedido |
-| `estado_anterior` | texto (20) | Sí | Estado de antes |
-| `estado_nuevo` | texto (20) | Sí | Estado nuevo |
-| `observacion` | texto largo | No | Por ejemplo, el motivo de una cancelación |
-| `fecha` | fecha y hora | Sí (automática) | Cuándo cambió |
+| Columna | Tipo Django | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|---|
+| `id` | `BigAutoField` | `integer` | PK, autoincremental | Identificador |
+| `pedido_id` | `ForeignKey(Pedido)` | `bigint` | NOT NULL, FK → `pedidos_pedido` | Qué pedido |
+| `estado_anterior` | `CharField(20)` | `varchar(20)` | NOT NULL | Estado de antes (mismos valores que `pedidos_pedido.estado`) |
+| `estado_nuevo` | `CharField(20)` | `varchar(20)` | NOT NULL | Estado nuevo |
+| `observacion` | `TextField` | `text` | NULL | Por ejemplo, el motivo de una cancelación |
+| `fecha` | `DateTimeField(auto_now_add)` | `datetime` | NOT NULL | Cuándo cambió. La pone Django |
 
 ---
 
@@ -208,16 +239,17 @@ Cada cambio de estado de un pedido.
 Tiene **una sola fila** (`id = 1`). Si no existe, el sistema la crea con los
 valores por defecto.
 
-| Columna | Tipo | Por defecto | Qué guarda |
-|---|---|---|---|
-| `tarifa_100m` | decimal (10, 2) | 50 | Precio por cada 100 m de envío después de la distancia incluida |
-| `distancia_minima` | decimal (5, 2) | 1 | Kilómetros que cubre el envío mínimo |
-| `costo_minimo_envio` | entero ≥ 0 | 1000 | Precio del envío mínimo |
-| `costo_hora_mano_obra` | entero ≥ 0 | 2500 | Costo de una hora de trabajo, para los costos |
-| `whatsapp_cocina` | texto (30) | vacío | Número de WhatsApp de la cocina |
-| `geoapify_api_key` | texto (128) | vacío | Clave del servicio de mapas |
-| `local_latitud` | número real | -27.455266 | Ubicación del local en el mapa |
-| `local_longitud` | número real | -58.992536 | Ubicación del local en el mapa |
+| Columna | Tipo Django | Tipo SQL | Restricciones | Descripción |
+|---|---|---|---|---|
+| `id` | `BigAutoField` | `integer` | PK, autoincremental | Siempre 1 |
+| `tarifa_100m` | `DecimalField(10,2)` | `decimal` | NOT NULL | Precio por cada 100 m de envío después de la distancia incluida. Por defecto 50 |
+| `distancia_minima` | `DecimalField(5,2)` | `decimal` | NOT NULL | Kilómetros que cubre el envío mínimo. Por defecto 1 |
+| `costo_minimo_envio` | `PositiveIntegerField` | `integer unsigned` | NOT NULL, CHECK ≥ 0 | Precio del envío mínimo. Por defecto 1000 |
+| `costo_hora_mano_obra` | `PositiveIntegerField` | `integer unsigned` | NOT NULL, CHECK ≥ 0 | Costo de una hora de trabajo, para los costos. Por defecto 2500 |
+| `whatsapp_cocina` | `CharField(30)` | `varchar(30)` | NOT NULL | Número de WhatsApp de la cocina. Puede ser texto vacío |
+| `geoapify_api_key` | `CharField(128)` | `varchar(128)` | NOT NULL | Clave del servicio de mapas. Puede ser texto vacío |
+| `local_latitud` | `FloatField` | `real` | NOT NULL | Ubicación del local en el mapa. Por defecto -27.455266 |
+| `local_longitud` | `FloatField` | `real` | NOT NULL | Ubicación del local en el mapa. Por defecto -58.992536 |
 
 ---
 
