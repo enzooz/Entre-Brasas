@@ -69,7 +69,7 @@ stock ni pedidos. Usar `python manage.py respaldar` antes de migrar.
 Los archivos de `cache_mapas/` están ignorados por Git. Los tests del proveedor
 usan claves ficticias y respuestas simuladas, nunca la clave real.
 
-Pruebas: `python manage.py test` y `node --test pedidos/tests_mapas.cjs` desde
+Pruebas: `python manage.py test` y `node --test tests/javascript/tests_mapas.cjs` desde
 `app/`, junto con los tests existentes. Django 4.2 se verifica con Python
 3.12. Servidor local Waitress requiere reinicio después de editar backend
 o templates cacheados. URLs de mosaicos/atribución pueden cambiarse con

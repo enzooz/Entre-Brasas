@@ -348,7 +348,7 @@ git diff
 Si cambiaste JavaScript, necesitas Node.js para ejecutar tambien estas pruebas
 desde `app` (no se necesita para instalar o usar la aplicacion):
 ```powershell
-node --test entre_brasas/tests_estado_sistema.cjs pedidos/tests_borrador.cjs pedidos/tests_clientes.cjs pedidos/tests_envio.cjs pedidos/tests_pasos.cjs pedidos/tests_mapas.cjs
+node --test tests/javascript/*.cjs
 ```
 Proba tambien el flujo que modificaste en el navegador. Las pruebas de
 arranque del instalador solo se ejecutan en Windows.
@@ -569,11 +569,15 @@ Entre Brasas/
 │   ├── entre_brasas/  configuracion general
 │   ├── pedidos/ menu/ inventario/ reportes/ costos/ config/
 │   ├── templates/
+│   ├── tests/javascript/  pruebas del navegador ejecutadas con Node.js
 │   └── static/
 └── docs/              documentacion del proyecto
 ```
 
 ### Documentacion
+
+Empezá por el [índice de documentación](docs/README.md). Para la defensa,
+consultá la [guía de estructura y recorrido del código](docs/estructura-y-defensa.md).
 
 | Documento | De que trata |
 |---|---|
@@ -593,19 +597,21 @@ El sistema esta dividido en seis aplicaciones, una por cada parte del negocio:
 | `inventario/` | Ingredientes, stock, movimientos y recetas |
 | `reportes/` | Reportes de ventas |
 | `costos/` | Cuanto cuesta y cuanto deja cada hamburguesa |
-| `config/` | Tarifas de envio y costo de mano de obra |
+| `config/` | Tarifas de envio, mano de obra, WhatsApp y mapas |
 
-Ademas hay tres carpetas que no son aplicaciones:
+Ademas hay carpetas de infraestructura, presentación y pruebas:
 
 | Carpeta | Que tiene |
 |---|---|
 | `entre_brasas/` | La configuracion general del proyecto |
 | `templates/` | Las pantallas HTML |
-| `static/` | El archivo de estilos |
+| `static/` | CSS, JavaScript, fuentes, imágenes y Leaflet |
+| `tests/javascript/` | Pruebas de la interacción del formulario y del estado del sistema |
 
 #### Dentro de cada aplicacion
 
-Los archivos siempre se llaman igual y hacen siempre lo mismo:
+Los archivos siguen las convenciones de Django. Cada módulo contiene los que necesita
+(por ejemplo, reportes y costos consultan modelos de otros módulos):
 
 | Archivo | Que hace |
 |---|---|

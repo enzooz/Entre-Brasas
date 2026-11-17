@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const fs = require('node:fs');
 const path = require('node:path');
-const source = fs.readFileSync(path.join(__dirname, '../static/js/estado-sistema.js'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '../../static/js/estado-sistema.js'), 'utf8');
 
 function setup({off = false, marker = null, state = {instancia: 'actual', apagando: false}} = {}) {
     function element() {
