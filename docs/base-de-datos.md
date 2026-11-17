@@ -7,7 +7,7 @@ servidor de base de datos corriendo aparte: SQLite es una librería que va
 embebida dentro del proceso de Django. No hay nada que "prender", ni puerto que
 escuchar, ni usuario y contraseña de base.
 
-Es el único motor del proyecto: no se usa PostgreSQL ni ningún otro.
+Es el único motor de base de datos del proyecto.
 
 ---
 

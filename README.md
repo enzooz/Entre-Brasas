@@ -306,8 +306,7 @@ SQL. Esto no cambia la estructura, solo los datos de **tu** base.
 **Opcion A: con un programa grafico.** Cualquiera de estos abre el archivo
 `app/db.sqlite3`:
 - [DB Browser for SQLite](https://sqlitebrowser.org/): gratis y simple.
-- [DBeaver](https://dbeaver.io/): gratis, y tambien sirve para otras bases
-  (PostgreSQL, SQL Server, MySQL).
+- [DBeaver](https://dbeaver.io/): gratis y mas completo.
 - La extension "SQLite Viewer" de VS Code.
 
 No hace falta instalar SQL Server ni ningun otro motor: SQLite es solo un
